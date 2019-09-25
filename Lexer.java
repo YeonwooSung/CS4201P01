@@ -1,16 +1,22 @@
+import java.util.ArrayList;
+import java.util.List;
 
 public class Lexer {
 	private boolean finished;
 	private boolean isCommented;
 	private int compoundLevel; //to check nested compounds
 
-	private SymbolTable table;
+	//private SymbolTable table;
 	private LexerFSA currentState;
 
-	private final LexerFSA PROGRAM_STATE;
-	private final LexerFSA COMPOUND_STATE;
-	private final LexerFSA STATEMENT_STATE;
+	private ArrayList<CompoundState> compoundList;
+	private ArrayList<StatementState> statementList;
 
+	private Lexemes lexemes;
+	private SymbolTable table;
+
+	private final String BACK_TO_STATEMENT = "Back To Statement";
+	private final String STATEMENT_SUCCESS = "STMT SUCCESS";
 	private final String COMP_END_STATE = "Compound - END";
 	private final String V_STATE = "Var";
 	private final String PR_STATE = "Print";
@@ -18,19 +24,36 @@ public class Lexer {
 	private final String I_STATE = "If";
 	private final String A_STATE = "Assign";
 
+	private final LexerFSA PROGRAM_STATE;
+
 	Lexer(SymbolTable table) {
 		finished = false;
 		isCommented = false;
-		compoundLevel = 0;
-		this.table = table;
+		compoundLevel = -1;
 		PROGRAM_STATE = new ProgramState();
-		COMPOUND_STATE = new CompoundState();
-		STATEMENT_STATE = new StatementState(table);
 		currentState = PROGRAM_STATE;
+
+		compoundList = new ArrayList<>();
+		compoundList.add(new CompoundState());
+
+		statementList = new ArrayList<>();
+		lexemes = new Lexemes();
+
+		this.table = table;
 	}
 
 	public void parseLine(String line) {
-		String[] words = line.split("\\s+");
+		String[] words = {};
+
+		if (line.contains("\"")) {
+			String[] sa = line.split("\\s+");
+			List<String> list = new ArrayList<String>();
+			appendStringsToList(sa, list);
+			words = list.toArray(words);
+
+		} else {
+			words = line.split("\\s+");
+		}
 
 		for (int i = 0; i < words.length; ++i) {
 			String word = words[i];
@@ -42,7 +65,7 @@ public class Lexer {
 
 					if (!word.endsWith("-}")) {
 						String[] splitted = word.split("-\\}");
-						if (parse(splitted[1])) parse(splitted[1]);
+						parseLoop(splitted[1]);
 					}
 				}
 			} else {
@@ -54,19 +77,19 @@ public class Lexer {
 					if (word.contains("-}")) {
 						if (!word.endsWith("-}")) {
 							String[] splitted = word.split("-\\}");
-							if (parse(splitted[1])) parse(splitted[1]);
+							parseLoop(splitted[1]);
 						}
 
 						isCommented = false;
 					} else {
 						if (!word.startsWith("{-")) {
 							String[] splitted = word.split("\\{-");
-							if (parse(splitted[0])) parse(splitted[0]);
+							parseLoop(splitted[0]);
 						}
 					}
 
 				} else {
-					if (parse(word)) parse(word);
+					parseLoop(word);
 				}
 
 			}
@@ -79,7 +102,7 @@ public class Lexer {
 	 * @param word - The word to parse.
 	 * @return Returns true if we need to re-parse the word. Otherwise, returns false.
 	 */
-	public boolean parse(String word) {
+	public boolean parseAndChangeState(String word) {
 
 		currentState.parseWord(word); //parse the word
 
@@ -87,19 +110,49 @@ public class Lexer {
 		if (currentState.isAbleToChangeState()) {
 			String nextState = currentState.getNextState();
 
-			//TODO compoundLevel
-
+			/*
+			 * Use if-else statements to check the name of next state.
+			 * Then, change to the corresponding state.
+			 */
 			if (nextState.equals("Compound")) {
-				currentState = COMPOUND_STATE;
+				compoundLevel += 1;
+
+				//TODO test
+				if (compoundLevel != (compoundList.size() - 1)) {
+					System.out.println("ERROR!!!! - TEST in parse() -> Compound");
+				}
+
+				currentState = compoundList.get(compoundLevel);
 			} else if (nextState.equals("END")) {
-				finished = true;
+				compoundList.remove(compoundLevel);
+				statementList.remove(compoundLevel);
+				compoundLevel -= 1;
+
+				if (compoundLevel > 0) {
+					currentState = compoundList.get(compoundLevel);
+				} else {
+					finished = true;
+				}
+
 			} else if (nextState.equals("Statement")) {
-				currentState = STATEMENT_STATE;
+				statementList.add(new StatementState(table));
+
+				//TODO test
+				if (compoundLevel != (statementList.size() - 1)) {
+					System.out.println("ERROR!!!! - TEST in parse() -> Statement");
+				}
+
+				currentState = statementList.get(compoundLevel);
 			} else if (nextState.equals(COMP_END_STATE)) {
-				currentState = COMPOUND_STATE;
+				currentState = compoundList.get(compoundLevel);
+
+				//returns true to let the lexer know that the given word should be re-parsed with a new state.
 				return true;
+
 			} else if (nextState.equals(V_STATE)) {
-				//
+
+				currentState = new VariableState(table, lexemes);
+
 			} else if (nextState.equals(PR_STATE)) {
 				//
 			} else if (nextState.equals(W_STATE)) {
@@ -108,18 +161,71 @@ public class Lexer {
 				//
 			} else if (nextState.equals(A_STATE)) {
 				//
+			} else if (nextState.equals(BACK_TO_STATEMENT)) {
+
+				/*
+				 * If the lexer found some syntax error, the lexer's fsa will go back to the latest statement state.
+				 *
+				 * For example, if the user input "var test;test;", the lexer will fail to parse the variable name.
+				 * Then, the lexer will change it's state to the Statement state.
+				 * By doing this, user would be able to input the valid code.
+				 */
+				currentState = statementList.get(compoundLevel);
+
+			} else if (nextState.equals(STATEMENT_SUCCESS)) {
+				currentState = statementList.get(compoundLevel);
 			} else {
 				System.out.print("StateNameError::Invalid state name (");
 				System.out.print(nextState);
 				System.out.println(")");
 			}
 
-			//TODO increase compoundLevel if required
 		}
 
 		return false;
 	}
 
+	/**
+	 * Loop until the "parseAndchangeState()" method returns false.
+	 * @param word - Target word that should be parsed.
+	 */
+	public void parseLoop(String word) {
+		boolean checker = true;
+
+		do {
+			checker = parseAndChangeState(word);
+		} while (checker);
+	}
+
+	/**
+	 * Check the double quoted strings, build them by using StringBuilder, and append string tokens to the List.
+	 * @param words - array that contains strings from character stream.
+	 * @param list - list to contain stings
+	 */
+	public void appendStringsToList(String[] words, List<String> list) {
+		for (int i = 0; i < words.length; i++) {
+			int count = words[i].length() - words[i].replace("\"", "").length();
+			if (words[i].contains("\"") && count % 2 != 0) {
+				StringBuilder builder = new StringBuilder(words[i]);
+				for (int j = i + 1; j < words.length; j++) {
+					builder.append(" ");
+					builder.append(words[j]);
+					if (words[j].contains("\"")) {
+						i = j;
+						break;
+					}
+				}
+				list.add(builder.toString());
+			} else {
+				list.add(words[i]);
+			}
+		}
+	}
+
+	/**
+	 * Check if the lexer is finished.
+	 * @return True if finished. Otherwise, returns false.
+	 */
 	public boolean isFinished() {
 		return finished;
 	}

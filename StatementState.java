@@ -12,12 +12,11 @@ public class StatementState implements LexerFSA {
 	private final String A_STATE = "Assign";
 
 	private SymbolTable table;
-	private LexerFSA currentState;
 
 	StatementState(SymbolTable table) {
 		changeState = false;
-		currentState = null;
 		isEmptyStmt = true;
+
 		this.table = table;
 	}
 
