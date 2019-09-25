@@ -69,10 +69,8 @@ public class VariableState implements LexerFSA {
 				if (word.contains(";")) {
 					String str = word.replace(";", "");
 
-					//validate the value - type checking (Type should be one of Number, String, and Boolean.
+					//validate the value
 					if (validateValue(str)) {
-						varValue = str;
-
 						//add variable data to symbol table
 						id = table.addSymbol(varName, varValue);
 
@@ -184,7 +182,6 @@ public class VariableState implements LexerFSA {
 
 	private boolean validateVarValue(String word) {
 		if (validateValue(word)) {
-			varValue = word;
 			id = table.addSymbol(varName, varValue); //add variable data to symbol table
 
 			//add lexeme token
@@ -204,7 +201,7 @@ public class VariableState implements LexerFSA {
 		if (validateVarName(splitted[0])) {
 			//check whether the right side of the ':=' is expression or not
 			if (splitted[1].contains(";")) {
-				validateVarValue(splitted[1].replace(";", ""));
+				validateVarValue(splitted[1]);
 			} else {
 				expressionMode = true;
 				expression = new StringBuilder(splitted[1]);
@@ -214,19 +211,26 @@ public class VariableState implements LexerFSA {
 
 	private boolean validateValue(String str) {
 		String word = str.replace(";", "");
-		boolean isValid = true;
+		boolean isValid;
 
 		if (!table.contains(word)) {
-			if (!(word.startsWith("\"") && word.endsWith("\""))) {
+			if (word.equals("true") || word.equals("false")) {
+				isValid = true;
+				varValue = word;
+			} else if (!(word.startsWith("\"") && word.endsWith("\""))) {
 				try {
 					Double.parseDouble(word);
+					isValid = true;
+					varValue = word;
 				} catch (NumberFormatException e) {
 					isValid = false;
 				}
+			} else {
+				isValid = true;
+				varValue = word;
 			}
 		} else {
-			int variableID = table.getIdOfVariable(word);
-			//TODO id of the variable -> ???
+			isValid = true;
 		}
 
 		return isValid;

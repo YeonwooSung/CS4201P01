@@ -1,12 +1,12 @@
 public class ExpressionUtils {
 
-	public static void addTokensToLexemes(Lexemes lexemes, String expression, SymbolTable table) {		
+	public static boolean addTokensToLexemes(Lexemes lexemes, String expression, SymbolTable table) {		
 		int counter_leftParen = expression.length() - expression.replaceAll("\\(", "").length();
 		int counter_rightParen = expression.length() - expression.replaceAll("\\)", "").length();
 
 		if (counter_rightParen != counter_leftParen) {
 			System.out.println("SyntaxError::Parenthesis not matching!");
-			return;
+			return false;
 		}
 
 		Lexemes temp = new Lexemes();
@@ -98,7 +98,10 @@ public class ExpressionUtils {
 		// check if there was any error while parsing the expression
 		if (checker) {
 			lexemes.mergeLexemes(temp);
+			return true;
 		}
+
+		return false;
 	}
 
 	private static boolean splitBySubtractionAndAppendToLexemes(Lexemes lexemes, String expression, SymbolTable table) {
