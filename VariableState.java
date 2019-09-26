@@ -45,7 +45,7 @@ public class VariableState implements LexerFSA {
 					// add variable to the symbol table
 					id = table.addSymbol(varName, varValue);
 
-					ExpressionUtils.addTokensToLexemes(lexemes, expression.toString(), table);
+					ExpressionUtils.addTokensToLexemes(lexemes, expression.toString(), table, ((Integer)id).toString());
 				} else if (word.endsWith(";")) {
 					expression.append(word.replace(";", ""));
 					changeState = true;
@@ -54,7 +54,7 @@ public class VariableState implements LexerFSA {
 					// add variable to the symbol table
 					id = table.addSymbol(varName, varValue);
 
-					ExpressionUtils.addTokensToLexemes(lexemes, expression.toString(), table);
+					ExpressionUtils.addTokensToLexemes(lexemes, expression.toString(), table, ((Integer)id).toString());
 				} else {
 					backToStatementState("SyntaxError::Syntax error in : " + word);
 				}
@@ -79,6 +79,7 @@ public class VariableState implements LexerFSA {
 
 						// add lexeme token
 						lexemes.insertLexeme("ID", ((Integer) id).toString());
+						lexemes.insertLexeme("ASSIGN_FIN");
 					} else {
 						backToStatementState("TypeError::Variable type should be one of [Number, String, Boolean] - " + word);
 					}
@@ -98,6 +99,7 @@ public class VariableState implements LexerFSA {
 
 					// add lexemes
 					lexemes.insertLexeme("ID", ((Integer) id).toString());
+					lexemes.insertLexeme("ASSIGN_FIN");
 
 				} else if (word.trim().equals(":=")) {
 					needToWaitForAssign = true;
@@ -136,6 +138,7 @@ public class VariableState implements LexerFSA {
 							id = table.addSymbol(varName, varValue);
 							nextState = STATEMENT_SUCCESS;
 							lexemes.insertLexeme("ID", ((Integer) id).toString());
+							lexemes.insertLexeme("ASSIGN_FIN");
 						}
 
 					} else {
@@ -186,6 +189,7 @@ public class VariableState implements LexerFSA {
 
 			//add lexeme token
 			lexemes.insertLexeme("ID", ((Integer) id).toString());
+			lexemes.insertLexeme("ASSIGN_FIN");
 
 			nextState = STATEMENT_SUCCESS;
 			return true;

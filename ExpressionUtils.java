@@ -1,6 +1,6 @@
 public class ExpressionUtils {
 
-	public static boolean addTokensToLexemes(Lexemes lexemes, String expression, SymbolTable table) {		
+	public static boolean addTokensToLexemes(Lexemes lexemes, String expression, SymbolTable table, String varID) {		
 		int counter_leftParen = expression.length() - expression.replaceAll("\\(", "").length();
 		int counter_rightParen = expression.length() - expression.replaceAll("\\)", "").length();
 
@@ -11,6 +11,9 @@ public class ExpressionUtils {
 
 		Lexemes temp = new Lexemes();
 		boolean checker = true;
+
+		temp.insertLexeme("ID", varID);
+		temp.insertLexeme("ASSIGN_START");
 
 		String[] leftParenArr = expression.split("\\(");
 		int length1 = leftParenArr.length - 1;
@@ -94,6 +97,8 @@ public class ExpressionUtils {
 				}
 			}
 		}
+
+		temp.insertLexeme("ASSIGN_END");
 
 		// check if there was any error while parsing the expression
 		if (checker) {
