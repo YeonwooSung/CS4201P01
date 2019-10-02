@@ -9,7 +9,14 @@ public class Analyser {
 
 		while (!lex.isFinished()) {
 			String line = sc.nextLine();
-			if (line.isEmpty()) continue;
+
+			// check if the read line is whitespace
+			if (line.matches("\\s+") || line.equals("")) {
+				System.out.println("whitespace!");
+				continue;
+			}
+
+			//TODO System.out.println("!!" + line + "!!");
 
 			// check if the read line contains double quote character
 			if (line.contains("\"")) {

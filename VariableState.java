@@ -13,17 +13,17 @@ public class VariableState implements LexerFSA {
 	private SymbolTable table;
 
 	private final String BACK_TO_STATEMENT = "Back To Statement";
-	private final String STATEMENT_SUCCESS = "STMT SUCCESS";
+	private final String STATEMENT_SUCCESS = "V - STMT SUCCESS";
 
-	VariableState(SymbolTable table, Lexemes lexemes) {
+	VariableState(SymbolTable table) {
 		foundID = false;
 		needToWaitForAssign = false;
 		changeState = false;
 		varValue = null;
 		expressionMode = false;
+		this.lexemes = new Lexemes(); 
 
 		this.table = table;
-		this.lexemes = lexemes;
 	}
 
 	@Override
@@ -31,6 +31,10 @@ public class VariableState implements LexerFSA {
 		return changeState;
 	}
 
+	/**
+	 * Parse the given word.
+	 * @param word - character stream
+	 */
 	@Override
 	public void parseWord(String word) {
 		if (expressionMode) {
@@ -45,7 +49,11 @@ public class VariableState implements LexerFSA {
 					// add variable to the symbol table
 					id = table.addSymbol(varName, varValue);
 
-					ExpressionUtils.addTokensToLexemes(lexemes, expression.toString(), table, ((Integer)id).toString());
+					boolean checker = ExpressionUtils.addTokensToLexemes(lexemes, expression.toString(), table, ((Integer)id).toString());
+
+					if (!checker) {
+						nextState = BACK_TO_STATEMENT;
+					}
 				} else if (word.endsWith(";")) {
 					expression.append(word.replace(";", ""));
 					changeState = true;
@@ -54,7 +62,11 @@ public class VariableState implements LexerFSA {
 					// add variable to the symbol table
 					id = table.addSymbol(varName, varValue);
 
-					ExpressionUtils.addTokensToLexemes(lexemes, expression.toString(), table, ((Integer)id).toString());
+					boolean checker = ExpressionUtils.addTokensToLexemes(lexemes, expression.toString(), table, ((Integer)id).toString());
+
+					if (!checker) {
+						nextState = BACK_TO_STATEMENT;
+					}
 				} else {
 					backToStatementState("SyntaxError::Syntax error in : " + word);
 				}
@@ -108,7 +120,7 @@ public class VariableState implements LexerFSA {
 					String newWord = word.replace(":=", "").trim();
 
 					if (newWord.contains(";")) {
-						validateVarValue(newWord);
+						validateVarValue(newWord.replace(";", ""));
 					} else {
 						expressionMode = true;
 						expression = new StringBuilder(newWord);
@@ -153,6 +165,10 @@ public class VariableState implements LexerFSA {
 		}
 	}
 
+	/**
+	 * Check if the given word ends with assignment.
+	 * @param word - Character stream
+	 */
 	private void checkIfEndsWithAssign(String word) {
 		if (word.endsWith(":=")) {
 			String newWord = word.replace(":=", "");
@@ -167,12 +183,21 @@ public class VariableState implements LexerFSA {
 		}
 	}
 
+	/**
+	 * Change the state of the FSA to StatementState.
+	 * @param errorMessage - error message to print out.
+	 */
 	private void backToStatementState(String errorMessage) {
 		System.out.println(errorMessage);
 		changeState = true;
 		nextState = BACK_TO_STATEMENT;
 	}
 
+	/**
+	 * Check the symbol table to check if the given name of variable is declared.
+	 * @param word - name of the variable.
+	 * @return If valid, returns true. Otherwise, returns false.
+	 */
 	private boolean validateVarName(String word) {
 		if (validateName(word)) {
 			varName = word;
@@ -183,6 +208,11 @@ public class VariableState implements LexerFSA {
 		}
 	}
 
+	/**
+	 * Validate the variable's value.
+	 * @param word - character stream
+	 * @return If valid, returns true. Otherwise, returns false.
+	 */
 	private boolean validateVarValue(String word) {
 		if (validateValue(word)) {
 			id = table.addSymbol(varName, varValue); //add variable data to symbol table
@@ -191,6 +221,7 @@ public class VariableState implements LexerFSA {
 			lexemes.insertLexeme("ID", ((Integer) id).toString());
 			lexemes.insertLexeme("ASSIGN_FIN");
 
+			this.changeState = true;
 			nextState = STATEMENT_SUCCESS;
 			return true;
 		} else {
@@ -199,6 +230,10 @@ public class VariableState implements LexerFSA {
 		}
 	}
 
+	/**
+	 * Validates the variable declaration statement.
+	 * @param word - stream of characters that should be validated.
+	 */
 	private void validateVarNameAndValue(String word) {
 		String[] splitted = word.split(":=");
 
@@ -213,6 +248,11 @@ public class VariableState implements LexerFSA {
 		}
 	}
 
+	/**
+	 * This function validates the value string.
+	 * @param str - string to validate
+	 * @return If valid, returns true. Otherwise, returns false.
+	 */
 	private boolean validateValue(String str) {
 		String word = str.replace(";", "");
 		boolean isValid;
@@ -268,4 +308,11 @@ public class VariableState implements LexerFSA {
 		return nextState;
 	}
 
+	/**
+	 * Getter for lexemes.
+	 * @return lexemes
+	 */
+	public Lexemes getLexemes() {
+		return lexemes;
+	}
 }

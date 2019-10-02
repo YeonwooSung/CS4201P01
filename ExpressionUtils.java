@@ -1,6 +1,6 @@
 public class ExpressionUtils {
 
-	public static boolean addTokensToLexemes(Lexemes lexemes, String expression, SymbolTable table, String varID) {		
+	public static boolean addTokensToLexemes(Lexemes lexemes, String expression, SymbolTable table) {
 		int counter_leftParen = expression.length() - expression.replaceAll("\\(", "").length();
 		int counter_rightParen = expression.length() - expression.replaceAll("\\)", "").length();
 
@@ -12,9 +12,6 @@ public class ExpressionUtils {
 		Lexemes temp = new Lexemes();
 		boolean checker = true;
 
-		temp.insertLexeme("ID", varID);
-		temp.insertLexeme("ASSIGN_START");
-
 		String[] leftParenArr = expression.split("\\(");
 		int length1 = leftParenArr.length - 1;
 
@@ -25,7 +22,8 @@ public class ExpressionUtils {
 					temp.insertLexeme("LPAREN");
 				}
 			} else {
-				if (a != length1) temp.insertLexeme("LPAREN");
+				//TODO if (a != length1) temp.insertLexeme("LPAREN");
+				temp.insertLexeme("LPAREN");
 			}
 
 			String expressionStr = leftParenArr[a].trim();
@@ -70,7 +68,116 @@ public class ExpressionUtils {
 				String[] arr = expressionStr.split("\\)");
 				int lengthOfArr = arr.length - 1;
 
-				if (expression.contains(")")) {
+				if (expressionStr.contains(")")) {
+					for (int j = 0; j <= lengthOfArr; j++) {
+						String str = arr[j].trim();
+
+						if (str.isEmpty()) continue;
+
+						if (!splitBySubtractionAndAppendToLexemes(temp, str, table)) {
+							checker = false;
+							break outer;
+						}
+
+						if (j <= lengthOfArr) temp.insertLexeme("RPAREN");
+					}
+				} else {
+					for (int j = 0; j <= lengthOfArr; j++) {
+						String str = arr[j].trim();
+
+						if (str.isEmpty()) continue;
+
+						if (!splitBySubtractionAndAppendToLexemes(temp, str, table)) {
+							checker = false;
+							break outer;
+						}
+					}
+				}
+			}
+		}
+
+		// check if there was any error while parsing the expression
+		if (checker) {
+			lexemes.mergeLexemes(temp);
+			return true;
+		}
+
+		return false;
+	}
+
+	public static boolean addTokensToLexemes(Lexemes lexemes, String expression, SymbolTable table, String varID) {		
+		int counter_leftParen = expression.length() - expression.replaceAll("\\(", "").length();
+		int counter_rightParen = expression.length() - expression.replaceAll("\\)", "").length();
+
+		if (counter_rightParen != counter_leftParen) {
+			System.out.println("SyntaxError::Parenthesis not matching!");
+			return false;
+		}
+
+		Lexemes temp = new Lexemes();
+		boolean checker = true;
+
+		temp.insertLexeme("ID", varID);
+		temp.insertLexeme("ASSIGN_START");
+
+		String[] leftParenArr = expression.split("\\(");
+		int length1 = leftParenArr.length - 1;
+
+		outer:
+		for (int a = 0; a <= length1; a++) {
+			if (a == 0) {
+				if (expression.startsWith("(")) {
+					temp.insertLexeme("LPAREN");
+				}
+			} else {
+				//TODO if (a != length1) temp.insertLexeme("LPAREN");
+				temp.insertLexeme("LPAREN");
+			}
+
+			String expressionStr = leftParenArr[a].trim(); //remove whitespaces
+
+			// check if the expressionStr is empty string.
+			if (expressionStr.matches("\\s") || expressionStr.equals("")) continue;
+
+			if (expressionStr.contains("+")) {
+
+				String[] expressionArr = expressionStr.split("\\+");
+				int finalIndex = expressionArr.length - 1;
+
+				for (int i = 0; i <= finalIndex; i++) {
+					String s = expressionArr[i];
+
+					if (s.contains(")")) {
+						String[] arr = s.split("\\)");
+						int lengthOfArr = arr.length - 1;
+
+						for (int j = 0; j <= lengthOfArr; j++) {
+							String str = arr[j].trim();
+
+							if (str.isEmpty()) continue;
+
+							if (!splitBySubtractionAndAppendToLexemes(temp, str, table)) {
+								checker = false;
+								break outer;
+							}
+
+							if (j <= lengthOfArr) temp.insertLexeme("RPAREN");
+						}
+
+					} else {
+						if (!splitBySubtractionAndAppendToLexemes(temp, s, table)) {
+							checker = false;
+							break outer;
+						}
+					}
+
+					if (i < finalIndex) temp.insertLexeme("AROP", "+");
+				}
+			} else {
+				String[] arr = expressionStr.split("\\)");
+				int lengthOfArr = arr.length - 1;
+
+				if (expressionStr.contains(")")) {
 					for (int j = 0; j <= lengthOfArr; j++) {
 						String str = arr[j].trim();
 
@@ -219,11 +326,6 @@ public class ExpressionUtils {
 		return true;
 	}
 
-	public static void checkBooleanOperations(String expression, Lexemes lexemes, SymbolTable table) {
-		//TODO (, )
-		checkNotOperations(expression, lexemes, table);
-	}
-
 	/**
 	 * Check if the expression contains the "not" operator.
 	 * @param expression - target expression
@@ -365,8 +467,14 @@ public class ExpressionUtils {
 					} else {
 						if (!checkRelationalOperations(s, lexemes, table))  return false;
 					}
+				}
 
-					if (i < finalIndex) lexemes.insertLexeme("RELOP", "==");
+				if (i < finalIndex) {
+					lexemes.insertLexeme("RELOP", "==");
+				} else {
+					if (expression.endsWith("==")) {
+						lexemes.insertLexeme("RELOP", "==");
+					}
 				}
 			}
 
@@ -433,15 +541,32 @@ public class ExpressionUtils {
 							}
 						}
 
-						if (l < length4) lexemes.insertLexeme("RELOP", "<");
+						if (l < length4) {
+							lexemes.insertLexeme("RELOP", "<");
+						} else if (s3.endsWith("<")) {
+							lexemes.insertLexeme("RELOP", "<");
+						}
 					}
-					
-					if (k < length3) lexemes.insertLexeme("RELOP", "<=");
+
+					if (k < length3) {
+						lexemes.insertLexeme("RELOP", "<=");
+					} else if (s2.endsWith("<=")) {
+						lexemes.insertLexeme("RELOP", "<=");
+					}
 				}
-				if (j < length2) lexemes.insertLexeme("RELOP", ">");
+
+				if (j < length2) {
+					lexemes.insertLexeme("RELOP", ">");
+				} else if (s1.endsWith(">")) {
+					lexemes.insertLexeme("RELOP", ">");
+				}
 			}
 
-			if (i < length1) lexemes.insertLexeme("RELOP", ">=");
+			if (i < length1) {
+				lexemes.insertLexeme("RELOP", ">=");
+			} else if (expression.endsWith(">=")) {
+				lexemes.insertLexeme("RELOP", ">=");
+			}
 		}
 
 		return true;

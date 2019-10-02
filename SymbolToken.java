@@ -66,7 +66,8 @@ public class SymbolToken {
 	}
 
 	public boolean isNameEqualTo(String s) {
-		return name.equals(s);
+		if (name != null) return name.equals(s);
+		else return false;
 	}
 
 	public String getName() {

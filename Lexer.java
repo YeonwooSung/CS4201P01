@@ -1,5 +1,7 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Lexer {
 	private boolean finished;
@@ -11,13 +13,14 @@ public class Lexer {
 
 	private ArrayList<CompoundState> compoundList;
 	private ArrayList<StatementState> statementList;
+	private ArrayList<Lexemes> lexemeList;
 
-	private Lexemes lexemes;
 	private SymbolTable table;
 
 	private final String BACK_TO_STATEMENT = "Back To Statement";
-	private final String STATEMENT_SUCCESS = "STMT SUCCESS";
+	private final String V_STATEMENT_SUCCESS = "V - STMT SUCCESS";
 	private final String COMP_END_STATE = "Compound - END";
+	private final String COMP_WHILE_STATE = "WHILE_COMPOUND";
 	private final String V_STATE = "Var";
 	private final String PR_STATE = "Print";
 	private final String W_STATE = "While";
@@ -37,7 +40,7 @@ public class Lexer {
 		compoundList.add(new CompoundState());
 
 		statementList = new ArrayList<>();
-		lexemes = new Lexemes();
+		lexemeList = new ArrayList<>();
 
 		this.table = table;
 	}
@@ -53,6 +56,35 @@ public class Lexer {
 
 		} else {
 			words = line.split("\\s+");
+		}
+
+		if (line.contains("var")) {
+			// check if the variable declaring line does not have the semi colon
+			if (!line.contains(";")) {
+				System.out.println("SyntaxError::Missing \";\"");
+				return;
+			} else {
+
+				//check if the variable declaring line has multiple semi colons
+				int counter = line.length() - line.replaceAll(";", "").length();
+				if (counter != 1) {
+					System.out.println("SyntaxError::Too much semi-colons -> expected = 1, actual = " + counter);
+					return;
+				}
+			}
+		}
+
+		//TODO
+		if (line.contains("print")) {
+			String regex = "print \"(?:[^\"]|\\b\"\\b)+\"\\S+;";
+
+			if (!line.contains(";")) {
+				System.out.println("SyntaxError::Cannot find semi colon!");
+				return;
+			} else if (!line.matches(regex)) {
+				System.out.println("SyntaxError::The format of the print statement = print \"message\"");
+				return;
+			}
 		}
 
 		for (int i = 0; i < words.length; ++i) {
@@ -128,14 +160,21 @@ public class Lexer {
 				statementList.remove(compoundLevel);
 				compoundLevel -= 1;
 
-				if (compoundLevel > 0) {
+				if (compoundLevel >= 0) {
 					currentState = compoundList.get(compoundLevel);
 				} else {
 					finished = true;
 				}
 
 			} else if (nextState.equals("Statement")) {
-				statementList.add(new StatementState(table));
+				CompoundState state = (CompoundState) currentState;
+				state.init();
+
+				if (state.getMode() != null) {
+					statementList.add(new StatementState(table, state.getMode()));
+				} else {
+					statementList.add(new StatementState(table));
+				}
 
 				//TODO test
 				if (compoundLevel != (statementList.size() - 1)) {
@@ -151,12 +190,15 @@ public class Lexer {
 
 			} else if (nextState.equals(V_STATE)) {
 
-				currentState = new VariableState(table, lexemes);
+				currentState = new VariableState(table);
 
 			} else if (nextState.equals(PR_STATE)) {
 				//
 			} else if (nextState.equals(W_STATE)) {
-				//
+				currentState = new WhileState(table);
+
+				//returns true to let the lexer know that the given word should be re-parsed with a new state.
+				return true;
 			} else if (nextState.equals(I_STATE)) {
 				//
 			} else if (nextState.equals(A_STATE)) {
@@ -171,9 +213,25 @@ public class Lexer {
 				 * By doing this, user would be able to input the valid code.
 				 */
 				currentState = statementList.get(compoundLevel);
+				((StatementState) currentState).init(); //init the attributes
 
-			} else if (nextState.equals(STATEMENT_SUCCESS)) {
+			} else if (nextState.equals(V_STATEMENT_SUCCESS)) {
+				lexemeList.add(((VariableState)currentState).getLexemes());
+
 				currentState = statementList.get(compoundLevel);
+				((StatementState) currentState).init(); //init the attributes
+				System.out.println(lexemeList.size());
+
+			} else if (nextState.equals(COMP_WHILE_STATE)) {
+				compoundLevel += 1;
+				this.compoundList.add(new CompoundState("while"));
+
+				currentState = this.compoundList.get(compoundLevel);
+				//TODO lexemes ??
+
+				//returns true to let the lexer know that the given word should be re-parsed with a new state.
+				return true;
+
 			} else {
 				System.out.print("StateNameError::Invalid state name (");
 				System.out.print(nextState);

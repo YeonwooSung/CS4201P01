@@ -34,7 +34,7 @@ public class SymbolTable {
 	 */
 	public int getIdOfVariable(String name) {
 		int index = 0;
-		
+
 		for (SymbolToken token : list) {
 			if (token.isNameEqualTo(name)) break;
 			index += 1;

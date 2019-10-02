@@ -3,6 +3,7 @@ public class StatementState implements LexerFSA {
 	private boolean changeState;
 	private boolean isEmptyStmt;
 	private String nextState;
+	private String mode;
 
 	private final String END_STATE = "Compound - END";
 	private final String V_STATE = "Var";
@@ -16,8 +17,14 @@ public class StatementState implements LexerFSA {
 	StatementState(SymbolTable table) {
 		changeState = false;
 		isEmptyStmt = true;
+		mode = null;
 
 		this.table = table;
+	}
+
+	StatementState(SymbolTable table, String mode) {
+		this(table);
+		this.mode = mode;
 	}
 
 	@Override
@@ -29,20 +36,45 @@ public class StatementState implements LexerFSA {
 	public void parseWord(String word) {
 		changeState = true;
 
-		if (word.equals("end")) {
-			if (isEmptyStmt) {
-				changeState = false;
-				System.out.println("SyntaxError::Statement cannot be empty!");
-			}
+		// check if the string contains the word "end", which is a keyword that finishes the compound
+		if (word.contains("end")) {
+			if (mode != null) {
 
-			nextState = END_STATE;
-			return;
+				// check the mode
+				if (mode.equals("while")) {
+					// validate the word
+					if (word.equals("end;") || word.equals("end")) {
+						if (isEmptyStmt) {
+							changeState = false;
+							System.out.println("SyntaxError::Statement cannot be empty!");
+						}
+
+						nextState = END_STATE;
+						return;
+					} else {
+						System.out.println("SyntaxError::Unexpected word : " + word);
+						return;
+					}
+				}
+
+			} else if (word.equals("end")) { //check if the word is "end", which is a keyword that finishes the compound
+				if (isEmptyStmt) {
+					changeState = false;
+					System.out.println("SyntaxError::Statement cannot be empty!");
+				}
+
+				nextState = END_STATE;
+				return;
+			} else {
+				System.out.println("SyntaxError::The statement should end with \"end\"!");
+				return;
+			}
 		} else if (word.equals("var")) {
 			nextState = V_STATE;
 		} else if (word.equals("print") || word.equals("get") || word.equals("println")) {
 			//TODO
-		} else if (word.equals("while")) {
-			//TODO
+		} else if (word.contains("while")) {
+			nextState = W_STATE;
 		} else if (word.equals("if")) {
 			//TODO
 		} else {
@@ -57,6 +89,11 @@ public class StatementState implements LexerFSA {
 		}
 
 		isEmptyStmt = false;
+	}
+
+	public void init() {
+		changeState = false;
+		nextState = null;
 	}
 
 	@Override
