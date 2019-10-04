@@ -66,21 +66,23 @@ public class StatementState implements LexerFSA {
 				nextState = END_STATE;
 				return;
 			} else {
+				changeState = false;
 				System.out.println("SyntaxError::The statement should end with \"end\"!");
 				return;
 			}
 		} else if (word.equals("var")) {
 			nextState = V_STATE;
 		} else if (word.equals("print") || word.equals("get") || word.equals("println")) {
-			//TODO
+			nextState = PR_STATE;
 		} else if (word.contains("while")) {
 			nextState = W_STATE;
 		} else if (word.equals("if")) {
 			//TODO
 		} else {
 
+			// check if the word is a variable name
 			if (table.contains(word)) {
-				//TODO "a"(id := expr)
+				nextState = A_STATE;
 			} else {
 				changeState = false;
 				System.out.println("NameError::Cannot find function or variable called \'" + word + "\'");

@@ -52,6 +52,7 @@ public class VariableState implements LexerFSA {
 					boolean checker = ExpressionUtils.addTokensToLexemes(lexemes, expression.toString(), table, ((Integer)id).toString());
 
 					if (!checker) {
+						table.removeSymbol(varName);
 						nextState = BACK_TO_STATEMENT;
 					}
 				} else if (word.endsWith(";")) {
@@ -65,8 +66,10 @@ public class VariableState implements LexerFSA {
 					boolean checker = ExpressionUtils.addTokensToLexemes(lexemes, expression.toString(), table, ((Integer)id).toString());
 
 					if (!checker) {
+						table.removeSymbol(varName);
 						nextState = BACK_TO_STATEMENT;
 					}
+					lexemes.printAll();//TODO
 				} else {
 					backToStatementState("SyntaxError::Syntax error in : " + word);
 				}
@@ -90,8 +93,8 @@ public class VariableState implements LexerFSA {
 						nextState = STATEMENT_SUCCESS;
 
 						// add lexeme token
+						lexemes.insertLexeme("VAR");
 						lexemes.insertLexeme("ID", ((Integer) id).toString());
-						lexemes.insertLexeme("ASSIGN_FIN");
 					} else {
 						backToStatementState("TypeError::Variable type should be one of [Number, String, Boolean] - " + word);
 					}
@@ -103,6 +106,7 @@ public class VariableState implements LexerFSA {
 			} else {
 
 				if (word.equals(";")) {
+					System.out.println("here");
 					changeState = true;
 					nextState = STATEMENT_SUCCESS;
 
@@ -110,8 +114,8 @@ public class VariableState implements LexerFSA {
 					id = table.addSymbol(varName, varValue);
 
 					// add lexemes
+					lexemes.insertLexeme("VAR");
 					lexemes.insertLexeme("ID", ((Integer) id).toString());
-					lexemes.insertLexeme("ASSIGN_FIN");
 
 				} else if (word.trim().equals(":=")) {
 					needToWaitForAssign = true;
@@ -127,7 +131,21 @@ public class VariableState implements LexerFSA {
 					}
 
 				} else {
-					backToStatementState("SyntaxError::Invalid syntax!");
+					if (word.contains(";")) {
+						varValue = word.replace(";", "");
+						changeState = true;
+						nextState = STATEMENT_SUCCESS;
+
+						// add variable to the symbol table
+						id = table.addSymbol(varName, varValue);
+
+						// add lexemes
+						lexemes.insertLexeme("VAR");
+						lexemes.insertLexeme("ID", ((Integer) id).toString());
+					} else {
+						expressionMode = true;
+						expression = new StringBuilder(word);
+					}
 				}
 
 			}
@@ -147,10 +165,12 @@ public class VariableState implements LexerFSA {
 						if (word.contains(":=")) {
 							validateVarNameAndValue(word);
 						} else {
+							varName = word.replace(";", "");
+
 							id = table.addSymbol(varName, varValue);
 							nextState = STATEMENT_SUCCESS;
+							lexemes.insertLexeme("VAR");
 							lexemes.insertLexeme("ID", ((Integer) id).toString());
-							lexemes.insertLexeme("ASSIGN_FIN");
 						}
 
 					} else {
@@ -218,8 +238,8 @@ public class VariableState implements LexerFSA {
 			id = table.addSymbol(varName, varValue); //add variable data to symbol table
 
 			//add lexeme token
+			lexemes.insertLexeme("VAR");
 			lexemes.insertLexeme("ID", ((Integer) id).toString());
-			lexemes.insertLexeme("ASSIGN_FIN");
 
 			this.changeState = true;
 			nextState = STATEMENT_SUCCESS;

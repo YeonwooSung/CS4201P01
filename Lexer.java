@@ -1,7 +1,5 @@
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class Lexer {
 	private boolean finished;
@@ -19,6 +17,8 @@ public class Lexer {
 
 	private final String BACK_TO_STATEMENT = "Back To Statement";
 	private final String V_STATEMENT_SUCCESS = "V - STMT SUCCESS";
+	private final String PR_STATEMENT_SUCCESS = "PR - STMT SUCCESS";
+	private final String A_STATEMENT_SUCCESS = "A - STMT SUCCESS";
 	private final String COMP_END_STATE = "Compound - END";
 	private final String COMP_WHILE_STATE = "WHILE_COMPOUND";
 	private final String V_STATE = "Var";
@@ -26,6 +26,10 @@ public class Lexer {
 	private final String W_STATE = "While";
 	private final String I_STATE = "If";
 	private final String A_STATE = "Assign";
+
+	private final String PRINT_CMD = "print";
+	private final String PRINTLN_CMD = "println";
+	private final String GET_CMD = "get";
 
 	private final LexerFSA PROGRAM_STATE;
 
@@ -45,7 +49,48 @@ public class Lexer {
 		this.table = table;
 	}
 
+	/**
+	 * Parse one line of the source code.
+	 * @param line - source code line
+	 */
 	public void parseLine(String line) {
+		// validate the variable declaring statement.
+		if (line.contains("var")) {
+			// check if the variable declaring line does not have the semicolon
+			if (!line.contains(";")) {
+				System.out.println("SyntaxError::Missing \";\"");
+				return;
+			} else {
+
+				//check if the variable declaring line has multiple semicolons
+				int counter = line.length() - line.replaceAll(";", "").length();
+				if (counter != 1) {
+					System.out.println("SyntaxError::Too much semi-colons -> expected = 1, actual = " + counter);
+					return;
+				}
+			}
+		} else if (line.contains(":=")) {
+			if (!line.contains(";")) {
+				System.out.println("SyntaxError::Missing \";\"");
+				return;
+			}
+		}
+
+		// validate the syntax of print statements
+		if (line.contains(PRINTLN_CMD)) {
+			if (!validateSyntaxOfPrintStatement(line, PRINTLN_CMD)) {
+				return;
+			}
+		} else if (line.contains(PRINT_CMD)) {
+			if (!validateSyntaxOfPrintStatement(line, PRINT_CMD)) {
+				return;
+			}
+		} else if (line.contains(GET_CMD)) {
+			if (!this.validateSyntaxOfGetCommand(line)) {
+				return;
+			}
+		}
+
 		String[] words = {};
 
 		if (line.contains("\"")) {
@@ -58,35 +103,7 @@ public class Lexer {
 			words = line.split("\\s+");
 		}
 
-		if (line.contains("var")) {
-			// check if the variable declaring line does not have the semi colon
-			if (!line.contains(";")) {
-				System.out.println("SyntaxError::Missing \";\"");
-				return;
-			} else {
-
-				//check if the variable declaring line has multiple semi colons
-				int counter = line.length() - line.replaceAll(";", "").length();
-				if (counter != 1) {
-					System.out.println("SyntaxError::Too much semi-colons -> expected = 1, actual = " + counter);
-					return;
-				}
-			}
-		}
-
-		//TODO
-		if (line.contains("print")) {
-			String regex = "print \"(?:[^\"]|\\b\"\\b)+\"\\S+;";
-
-			if (!line.contains(";")) {
-				System.out.println("SyntaxError::Cannot find semi colon!");
-				return;
-			} else if (!line.matches(regex)) {
-				System.out.println("SyntaxError::The format of the print statement = print \"message\"");
-				return;
-			}
-		}
-
+		// iterate the array of words in the read line
 		for (int i = 0; i < words.length; ++i) {
 			String word = words[i];
 
@@ -189,11 +206,12 @@ public class Lexer {
 				return true;
 
 			} else if (nextState.equals(V_STATE)) {
-
 				currentState = new VariableState(table);
-
 			} else if (nextState.equals(PR_STATE)) {
-				//
+				currentState = new PrintState(table);
+
+				//returns true to let the lexer know that the given word should be re-parsed with a new state.
+				return true;
 			} else if (nextState.equals(W_STATE)) {
 				currentState = new WhileState(table);
 
@@ -202,7 +220,10 @@ public class Lexer {
 			} else if (nextState.equals(I_STATE)) {
 				//
 			} else if (nextState.equals(A_STATE)) {
-				//
+				currentState = new AssignmentState(table);
+
+				//returns true to let the lexer know that the given word should be re-parsed with a new state.
+				return true;
 			} else if (nextState.equals(BACK_TO_STATEMENT)) {
 
 				/*
@@ -215,12 +236,23 @@ public class Lexer {
 				currentState = statementList.get(compoundLevel);
 				((StatementState) currentState).init(); //init the attributes
 
-			} else if (nextState.equals(V_STATEMENT_SUCCESS)) {
+			} else if (nextState.contains(V_STATEMENT_SUCCESS)) {
 				lexemeList.add(((VariableState)currentState).getLexemes());
 
 				currentState = statementList.get(compoundLevel);
 				((StatementState) currentState).init(); //init the attributes
-				System.out.println(lexemeList.size());
+
+			} else if (nextState.equals(PR_STATEMENT_SUCCESS)) {
+				lexemeList.add(((PrintState)currentState).getLexemes());
+
+				currentState = statementList.get(compoundLevel);
+				((StatementState) currentState).init(); //init the attributes
+
+			} else if (nextState.equals(A_STATEMENT_SUCCESS)) {
+				lexemeList.add(((AssignmentState)currentState).getLexemes());
+
+				currentState = statementList.get(compoundLevel);
+				((StatementState) currentState).init(); //init the attributes
 
 			} else if (nextState.equals(COMP_WHILE_STATE)) {
 				compoundLevel += 1;
@@ -253,6 +285,54 @@ public class Lexer {
 		do {
 			checker = parseAndChangeState(word);
 		} while (checker);
+	}
+
+	/**
+	 * This method supports the lexer to validate the syntax of the print statement.
+	 * @param line - line to check
+	 * @param command - either "println" or "print"
+	 * @return If valid, returns true. Otherwise, returns false.
+	 */
+	private boolean validateSyntaxOfPrintStatement(String line, String command) {
+		if (line.contains(command)) {
+			String target = line.replace(command, "").trim();
+			if (target.contains(";")) {
+				return true;
+			} else {
+				System.out.println("SyntaxError::Cannot find semicolon");
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * This method helps the lexer to validate the syntax of the "get" command.
+	 * @param line - the target source code to check the syntax
+	 * @return If valid, returns true. Otherwise, returns false.
+	 */
+	private boolean validateSyntaxOfGetCommand(String line) {
+		String target = line.replace(GET_CMD, "").trim();
+
+		// check if the string contains the semicolon
+		if (target.contains(";")) {
+			String name = target.replace(";", "");
+
+			if (table.contains(name)) {
+				// check if the variable is declared and defined
+				try {
+					table.getValueOf(name);
+				} catch(NullPointerException e) {
+					System.out.println("NameError::Variable " + name + " is not declared");
+				}
+			} else {
+				System.out.println("NameError::Variable " + name + " is not declared");
+			}
+		} else {
+			System.out.println("SyntaxError::Cannot find semicolon");
+		}
+
+		return false;
 	}
 
 	/**
