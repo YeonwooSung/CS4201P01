@@ -69,7 +69,6 @@ public class VariableState implements LexerFSA {
 						table.removeSymbol(varName);
 						nextState = BACK_TO_STATEMENT;
 					}
-					lexemes.printAll();//TODO
 				} else {
 					backToStatementState("SyntaxError::Syntax error in : " + word);
 				}

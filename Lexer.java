@@ -4,6 +4,7 @@ import java.util.List;
 public class Lexer {
 	private boolean finished;
 	private boolean isCommented;
+	private boolean ifStatementMode;
 	private int compoundLevel; //to check nested compounds
 
 	//private SymbolTable table;
@@ -19,6 +20,7 @@ public class Lexer {
 	private final String V_STATEMENT_SUCCESS = "V - STMT SUCCESS";
 	private final String PR_STATEMENT_SUCCESS = "PR - STMT SUCCESS";
 	private final String A_STATEMENT_SUCCESS = "A - STMT SUCCESS";
+	private final String I_STATEMENT_SUCCESS = "I - STMT SUCCESS";
 	private final String COMP_END_STATE = "Compound - END";
 	private final String COMP_WHILE_STATE = "WHILE_COMPOUND";
 	private final String V_STATE = "Var";
@@ -36,6 +38,8 @@ public class Lexer {
 	Lexer(SymbolTable table) {
 		finished = false;
 		isCommented = false;
+		ifStatementMode = false;
+
 		compoundLevel = -1;
 		PROGRAM_STATE = new ProgramState();
 		currentState = PROGRAM_STATE;
@@ -147,14 +151,9 @@ public class Lexer {
 
 	/**
 	 * Parse the word, and change the state of FSA.
-	 *
-	 * @param word - The word to parse.
 	 * @return Returns true if we need to re-parse the word. Otherwise, returns false.
 	 */
-	public boolean parseAndChangeState(String word) {
-
-		currentState.parseWord(word); //parse the word
-
+	public boolean changeState() {
 		// check if it is able to change the state of the lexer's FSA
 		if (currentState.isAbleToChangeState()) {
 			String nextState = currentState.getNextState();
@@ -218,7 +217,9 @@ public class Lexer {
 				//returns true to let the lexer know that the given word should be re-parsed with a new state.
 				return true;
 			} else if (nextState.equals(I_STATE)) {
-				//
+				currentState = new IfState(table);
+				ifStatementMode = true;
+
 			} else if (nextState.equals(A_STATE)) {
 				currentState = new AssignmentState(table);
 
@@ -254,6 +255,16 @@ public class Lexer {
 				currentState = statementList.get(compoundLevel);
 				((StatementState) currentState).init(); //init the attributes
 
+			} else if (nextState.equals(I_STATEMENT_SUCCESS)) {
+				lexemeList.add(((IfState) currentState).getLexemes());
+
+				//get array list of Lexemes objects from IfState instance.
+				ArrayList<Lexemes> list = ((IfState) currentState).getLexemeList();
+				this.mergeLexemeLists(list); //merge 2 ArrayList<Lexemes> objects
+
+				currentState = statementList.get(compoundLevel);
+				((StatementState) currentState).init(); //init the attributes
+
 			} else if (nextState.equals(COMP_WHILE_STATE)) {
 				compoundLevel += 1;
 				this.compoundList.add(new CompoundState("while"));
@@ -276,6 +287,16 @@ public class Lexer {
 	}
 
 	/**
+	 * Merge lexeme lists.
+	 * @param list - ArrayList of Lexemes object.
+	 */
+	private void mergeLexemeLists(ArrayList<Lexemes> list) {
+		for (Lexemes l : list) {
+			this.lexemeList.add(l);
+		}
+	}
+
+	/**
 	 * Loop until the "parseAndchangeState()" method returns false.
 	 * @param word - Target word that should be parsed.
 	 */
@@ -283,7 +304,8 @@ public class Lexer {
 		boolean checker = true;
 
 		do {
-			checker = parseAndChangeState(word);
+			currentState.parseWord(word); //parse the word
+			checker = changeState();
 		} while (checker);
 	}
 
@@ -361,10 +383,33 @@ public class Lexer {
 	}
 
 	/**
+	 * Parse the if statement.
+	 * @param line - character stream for if statement
+	 */
+	public void parseIfStatement(String line) {
+		if (this.ifStatementMode) {
+			IfState stmt = (IfState) currentState;
+			stmt.processStatement(line);
+
+			ifStatementMode = false;
+
+			this.changeState();
+		}
+	}
+
+	/**
 	 * Check if the lexer is finished.
 	 * @return True if finished. Otherwise, returns false.
 	 */
 	public boolean isFinished() {
 		return finished;
+	}
+
+	/**
+	 * Getter for lexemeList.
+	 * @return lexemeList
+	 */
+	public ArrayList<Lexemes> getLexemeList() {
+		return lexemeList;
 	}
 }

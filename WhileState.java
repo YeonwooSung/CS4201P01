@@ -162,7 +162,6 @@ public class WhileState implements LexerFSA {
 		// validate booleanStr
 		if (ExpressionUtils.addTokensToLexemes(lexemes, booleanStr, table)) {
 			nextState = COMPOUND_STATE;
-			lexemes.printAll(); //TODO
 		} else {
 			nextState = BACK_TO_STATEMENT;
 		}

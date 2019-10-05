@@ -74,10 +74,10 @@ public class StatementState implements LexerFSA {
 			nextState = V_STATE;
 		} else if (word.equals("print") || word.equals("get") || word.equals("println")) {
 			nextState = PR_STATE;
-		} else if (word.contains("while")) {
+		} else if (word.startsWith("while")) {
 			nextState = W_STATE;
-		} else if (word.equals("if")) {
-			//TODO
+		} else if (word.startsWith("if")) {
+			nextState = I_STATE;
 		} else {
 
 			// check if the word is a variable name
