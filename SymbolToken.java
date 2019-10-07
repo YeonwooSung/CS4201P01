@@ -70,10 +70,18 @@ public class SymbolToken {
 		else return false;
 	}
 
+	/**
+	 * Getter for name
+	 * @return name
+	 */
 	public String getName() {
 		return name;
 	}
-	
+
+	/**
+	 * Getter for value.
+	 * @return value
+	 */
 	public String getValue() {
 		return value;
 	}

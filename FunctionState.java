@@ -1,6 +1,6 @@
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 
 public class FunctionState implements LexerFSA {
 	private boolean changeState;
@@ -11,6 +11,7 @@ public class FunctionState implements LexerFSA {
 	private SymbolTable table;
 	private SymbolTable temp;
 	private Lexer lexer;
+	private ArrayList<Lexemes> lexemeList;
 
 	private final String BACK_TO_STATEMENT = "Back To Statement";
 	private final String STATEMENT_SUCCESS = "F - STMT SUCCESS";
@@ -40,8 +41,6 @@ public class FunctionState implements LexerFSA {
 				return;
 			}
 
-			//TODO check symbol table if there is duplicating function.
-
 			functionName = word;
 			findFunctionName = true;
 		}
@@ -69,7 +68,7 @@ public class FunctionState implements LexerFSA {
 
 		// get the index of the argument string from the function string
 		int argIndex = this.getIndexOfArgumentsFromFunctionString(functionStr);
-		
+
 		if (argIndex == -1) {
 			return;
 		}
@@ -94,10 +93,35 @@ public class FunctionState implements LexerFSA {
 						return;
 					}
 				}
+
+				// check symbol table if there is duplicating function.
+				if (table.checkIfFunctionExist(functionName, args.length)) {
+					this.generateErrorMessage("NameError::The function " + functionName + " is already declared!");
+				} else {
+					// add the function information to the symbol table
+					table.addFunction(functionName, args.length);
+				}
 			} else {
 				// validate the argument name
 				if (!this.validateArgumentString(argStr)) {
 					return;
+				}
+
+				int argNum;
+
+				// check if the function has no argument
+				if (argStr.replace("(", "").replace(")", "").trim().equals("")) {
+					argNum = 0;
+				} else {
+					argNum = 1;
+				}
+
+				// check symbol table if there is duplicating function.
+				if (table.checkIfFunctionExist(functionName, argNum)) {
+					this.generateErrorMessage("NameError::The function " + functionName + " is already declared!");
+				} else {
+					// add the function information to the symbol table
+					table.addFunction(functionName, argNum);
 				}
 			}
 
@@ -124,9 +148,19 @@ public class FunctionState implements LexerFSA {
 			this.lexer.parseLine(this.functionStr);
 		}
 
-		lexer.parseLoop("end");
+		//TODO test
+		if (lexer.isFinished()) {
+			//System.out.println("DEBUGGING - lexer.isFinished() == true  (in FunctionState.java)");
+		}
 
-		//TODO get lexemeList from lexer.
+		lexemeList = lexer.getLexemeList();
+		Lexemes lexeme = new Lexemes();
+		lexeme.insertLexeme("Function", functionName);
+
+		lexemeList.add(0, lexeme);
+		lexeme = new Lexemes();
+		lexeme.insertLexeme("Function_FIN");
+		lexemeList.add(lexeme);
 
 		changeState = true;
 		nextState = STATEMENT_SUCCESS;
@@ -172,6 +206,11 @@ public class FunctionState implements LexerFSA {
 	 * @return If valid, returns true. Otherwise, returns false.
 	 */
 	private boolean validateArgumentString(String arg) {
+		//check if the function has no argument
+		if (arg.replace("(", "").replace(")", "").trim().equals("")) {
+			return true;
+		}
+
 		if (arg.contains("var")) {
 			String argStr = arg.replace("var", "").trim();
 
@@ -201,8 +240,8 @@ public class FunctionState implements LexerFSA {
 	}
 
 	/**
-	 * Check the pattern by using given regex string, and replace the argument name with suitable string.
-	 * @param rx - regex string
+	 * Check the pattern by using given regular expression string, and replace the argument name with suitable string.
+	 * @param rx - regular expression string
 	 * @param argName - argument variable name
 	 */
 	private void replaceStringByPattern(String rx, String argName) {
@@ -210,6 +249,7 @@ public class FunctionState implements LexerFSA {
 		Pattern p = Pattern.compile(rx);
 		Matcher m = p.matcher(functionStr);
 
+		// iterate the matcher to find all substrings that match with the given regular expression
 		while (m.find()) {
 		    int startIndex = m.start();
 		    int endIndex = m.end();
@@ -236,6 +276,7 @@ public class FunctionState implements LexerFSA {
 
 		functionStr = sb.toString();
 	}
+
 	/**
 	 * Get the index of the argument section from the given function string.
 	 * @param functionStr - character stream of function.
@@ -253,6 +294,7 @@ public class FunctionState implements LexerFSA {
 			}
 		}
 
+		// check if the functionStr contains the right parenthesis
 		if (checker) {
 			this.generateErrorMessage("SyntaxError::Cannot find \")\" for function!");
 			return -1;
@@ -263,10 +305,22 @@ public class FunctionState implements LexerFSA {
 		return i;
 	}
 
+	/**
+	 * Print out the error message, and change the state to error state.
+	 * @param errorMsg - error message
+	 */
 	private void generateErrorMessage(String errorMsg) {
 		System.out.println(errorMsg);
 		changeState = true;
 		nextState = BACK_TO_STATEMENT;
+	}
+
+	/**
+	 * Getter for lexemeList.
+	 * @return lexemeList
+	 */
+	public ArrayList<Lexemes> getLexemeList() {
+		return this.lexemeList;
 	}
 
 	@Override

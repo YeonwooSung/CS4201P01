@@ -75,6 +75,10 @@ public class IfState implements LexerFSA {
 		}
 	}
 
+	/**
+	 * Process the if statement by parsing the given line.
+	 * @param line - string that contains the if statement
+	 */
 	public void processStatement(String line) {
 		if (line.contains("else")) {
 			hasElse = true;
@@ -82,6 +86,7 @@ public class IfState implements LexerFSA {
 
 		String [] words = line.split("\\s+");
 
+		// use for loop to iterate all words
 		for (int i = 0; i < words.length; i++) {
 			String word = words[i].trim();
 
@@ -92,6 +97,7 @@ public class IfState implements LexerFSA {
 
 		lexemeList = lexer.getLexemeList();
 
+		// check if the statement has "else"
 		if (hasElse) {
 			ArrayList<Lexemes> lexemeList2 = elseLexer.getLexemeList();
 			for (Lexemes l : lexemeList2) {

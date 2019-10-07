@@ -1,14 +1,18 @@
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SymbolTable {
 	private HashMap<String, String> hm;
 	private ArrayList<SymbolToken> list;
+	private ArrayList<SymbolToken> functionList;
 	private int symbolCounter;
 
 	SymbolTable() {
 		hm = new HashMap<>();
 		list = new ArrayList<>();
+		functionList = new ArrayList<>();
 		symbolCounter = 0;
 	}
 
@@ -95,4 +99,119 @@ public class SymbolTable {
 
 		return id;
 	}
+
+	/**
+	 * Add a function to the array list.
+	 * @param functionName - name of the function
+	 * @param numOfArgs - number of the arguments
+	 */
+	public void addFunction(String functionName, int numOfArgs) {
+		SymbolToken functionToken = new SymbolToken();
+		functionToken.setName(functionName);
+		functionToken.setValue(((Integer)numOfArgs).toString());
+		this.functionList.add(functionToken);
+	}
+
+	/**
+	 * Check whether the given name of function already exists.
+	 * @param functionName - name of the function
+	 * @return If exists, returns true. Otherwise, returns false.
+	 */
+	public boolean checkIfFunctionExist(String functionName, int numOfArgs) {
+		boolean checker = false;
+		String numOfArguments = ((Integer)numOfArgs).toString();
+
+		// iterate the array list of SymbolToken objects to check whether the given function is already declared
+		for (SymbolToken token : functionList) {
+			String str = token.getName();
+			String val = token.getValue();
+
+			if (str.equals(functionName) && val.equals(numOfArguments)) {
+				checker = true;
+				break;
+			}
+		}
+
+		return checker;
+	}
+
+	public String checkFunction(String expression) {
+		String newExpression = expression;
+
+		for (SymbolToken token : functionList) {
+			String functionName = token.getName();
+			int argNum = Integer.parseInt(token.getValue());
+
+			if (expression.contains(functionName)) {
+				StringBuilder regexBuilder = new StringBuilder(functionName);
+				regexBuilder.append("\\(");
+
+				for (int a = 0; a < argNum; a++) {
+					regexBuilder.append("\\s*\\w+\\s*");
+					if (a != argNum - 1) {
+						regexBuilder.append(",");
+					}
+				}
+
+				regexBuilder.append("\\)");
+				String regex = regexBuilder.toString();
+
+				Pattern p = Pattern.compile(regex);
+				Matcher m = p.matcher(newExpression);
+
+				boolean checker = true;
+				StringBuilder sb = new StringBuilder();
+
+				// use while loop to get all regex strings
+				while (m.find()) {
+					checker = false;
+					int startIndex = m.start();
+				    int endIndex = m.end();
+
+				    if (startIndex != 0) {
+				    	sb.append(newExpression.substring(0, startIndex));
+
+				    	String subStr = newExpression.substring(startIndex, endIndex);
+				    	subStr = subStr.replace("(", "").replace(")", "").replace(",", " ").replace(functionName, "");
+
+				    	sb.append("FunctionCall@");
+				    	sb.append(functionName);
+				    	sb.append("[");
+				    	sb.append(subStr);
+				    	sb.append("] ");
+
+				    	if (endIndex < newExpression.length() - 1) {
+				    		sb.append(newExpression.substring(endIndex));
+				    	}
+				    } else {
+				    	String subStr = newExpression.substring(startIndex, endIndex);
+				    	subStr = subStr.replace("(", "").replace(")", "").replace(",", " ").replace(functionName, "");
+
+				    	sb.append("FunctionCall@");
+				    	sb.append(functionName);
+				    	sb.append("[");
+				    	sb.append(subStr);
+				    	sb.append("] ");
+
+				    	if (endIndex < newExpression.length() - 1) {
+				    		sb.append(newExpression.substring(endIndex));
+				    	}
+				    }
+
+				    newExpression = sb.toString();
+
+				    if (newExpression.contains(";")) newExpression.replace(";", "");
+				}
+
+				if (checker) {
+					return null;
+				} else {
+					break;
+				}
+			}
+		}
+
+		return newExpression;
+	}
+
 }

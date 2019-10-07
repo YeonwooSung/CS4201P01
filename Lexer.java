@@ -273,7 +273,9 @@ public class Lexer {
 				((StatementState) currentState).init(); //init the attributes
 
 			} else if (nextState.equals(F_STATEMENT_SUCCESS)) {
-				//TODO add lexemes to lexemeList
+				//get array list of Lexemes objects from IfState instance.
+				ArrayList<Lexemes> list = ((FunctionState) currentState).getLexemeList();
+				this.mergeLexemeLists(list);
 
 				currentState = statementList.get(compoundLevel);
 				((StatementState) currentState).init(); //init the attributes

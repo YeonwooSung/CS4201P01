@@ -1,38 +1,39 @@
 public class ExpressionUtils {
 
 	public static boolean addTokensToLexemes(Lexemes lexemes, String expression, SymbolTable table, String varID) {		
-		int counter_leftParen = expression.length() - expression.replaceAll("\\(", "").length();
-		int counter_rightParen = expression.length() - expression.replaceAll("\\)", "").length();
+		lexemes.insertLexeme("VAR");
+		lexemes.insertLexeme("ID", varID);
+		lexemes.insertLexeme("IS", "=");
 
-		if (counter_rightParen != counter_leftParen) {
-			System.out.println("SyntaxError::Parenthesis not matching!");
-			return false;
-		}
-
-		Lexemes temp = new Lexemes();
-		boolean checker = true;
-
-		temp.insertLexeme("VAR");
-		temp.insertLexeme("ID", varID);
-		temp.insertLexeme("IS", "=");
-
-		checker = addTokensToLexemes(temp, expression, table);
-
-		// check if there was any error while parsing the expression
-		if (checker) {
-			lexemes.mergeLexemes(temp);
-		}
-
-		return checker;
+		return addTokensToLexemes(lexemes, expression, table);
 	}
 
-	public static boolean addTokensToLexemes(Lexemes lexemes, String expression, SymbolTable table) {
-		int counter_leftParen = expression.length() - expression.replaceAll("\\(", "").length();
-		int counter_rightParen = expression.length() - expression.replaceAll("\\)", "").length();
+	public static boolean addTokensToLexemes(Lexemes lexemes, String originalStr, SymbolTable table) {
+		int counter_leftParen = originalStr.length() - originalStr.replaceAll("\\(", "").length();
+		int counter_rightParen = originalStr.length() - originalStr.replaceAll("\\)", "").length();
 
 		if (counter_rightParen != counter_leftParen) {
 			System.out.println("SyntaxError::Parenthesis not matching!");
 			return false;
+		}
+
+		// check if the expression contains function call
+		String expression = table.checkFunction(originalStr);
+
+		if (expression == null) {
+			System.out.println("SyntaxError::Function call failed");
+			return false;
+		}
+
+
+		/* refine the expression string */
+
+		if (expression.contains("(")) {
+			expression = expression.replace("(", " (");
+		}
+
+		if (expression.contains(")")) {
+			expression = expression.replace(")", " )");
 		}
 
 		Lexemes temp = new Lexemes();
@@ -43,13 +44,21 @@ public class ExpressionUtils {
 
 		outer:
 		for (int a = 0; a <= length1; a++) {
-			if (a == 0) {
-				if (expression.startsWith("(")) {
+//			if (a == 0) {
+//				if (expression.startsWith("(")) {
+//					temp.insertLexeme("LPAREN");
+//				}
+//			} else {
+//				if (a != length1) temp.insertLexeme("LPAREN");
+//				//TODO temp.insertLexeme("LPAREN");
+//			}
+			if (a != 0) {
+				if (a != length1) {
+					temp.insertLexeme("LPAREN");
+				} else if (expression.endsWith("(" + leftParenArr[a])) {
 					temp.insertLexeme("LPAREN");
 				}
-			} else {
-				//TODO if (a != length1) temp.insertLexeme("LPAREN");
-				temp.insertLexeme("LPAREN");
+				//TODO temp.insertLexeme("LPAREN");
 			}
 
 			String expressionStr = leftParenArr[a].trim(); //remove whitespaces
@@ -73,8 +82,8 @@ public class ExpressionUtils {
 						for (int j = 0; j <= lengthOfArr; j++) {
 							String str = arr[j].trim();
 
-							if (str.equals("") || str.matches("\\s+")) {
-								if (s.contains(str + ")")) {
+							if (arr[j].equals("") || arr[j].matches("\\s+")) {
+								if (s.contains(arr[j] + ")")) {
 									temp.insertLexeme("RPAREN"); //TODO need to test
 								}
 								continue;
@@ -213,6 +222,10 @@ public class ExpressionUtils {
 					if (table.contains(s)) {
 						int id = table.getIdOfVariable(s);
 						lexemes.insertLexeme("ID", ((Integer) id).toString());
+					} else if (s.trim().equals("ARG_START") || s.trim().equals("ARG_END")) {
+						lexemes.insertLexeme(s.trim());
+					} else if (s.trim().startsWith("FunctionCall@")) {
+						lexemes.insertLexeme(s.trim());
 					} else {
 						try {
 							// check if the current string is either empty or whitespace
@@ -254,6 +267,13 @@ public class ExpressionUtils {
 			} else if (table.contains(expression)) {
 				int id = table.getIdOfVariable(expression);
 				lexemes.insertLexeme("ID", ((Integer) id).toString());
+
+			} else if (expression.trim().equals("ARG_START") || expression.trim().equals("ARG_END")) {
+				lexemes.insertLexeme(expression.trim());
+
+			} else if (expression.trim().startsWith("FunctionCall@")) {
+				lexemes.insertLexeme(expression.trim());
+
 			} else {
 
 				if (expression.contains(">") || expression.contains("<") || expression.contains("==") || expression.contains("or") || expression.contains("and") || expression.contains("not")) {
@@ -272,7 +292,6 @@ public class ExpressionUtils {
 							lexemes.insertLexeme("CONST_NUM", expression);
 						}
 					} catch (Exception e) {
-						//TODO
 						System.out.println("TypeError::You can only use arithmetic operations with numbers");
 						return false;
 					}
