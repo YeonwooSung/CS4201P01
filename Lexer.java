@@ -5,6 +5,8 @@ public class Lexer {
 	private boolean finished;
 	private boolean isCommented;
 	private boolean ifStatementMode;
+	private boolean functionMode;
+	private boolean isForFunctionBody;
 	private int compoundLevel; //to check nested compounds
 
 	//private SymbolTable table;
@@ -21,6 +23,7 @@ public class Lexer {
 	private final String PR_STATEMENT_SUCCESS = "PR - STMT SUCCESS";
 	private final String A_STATEMENT_SUCCESS = "A - STMT SUCCESS";
 	private final String I_STATEMENT_SUCCESS = "I - STMT SUCCESS";
+	private final String F_STATEMENT_SUCCESS = "F - STMT SUCCESS";
 	private final String COMP_END_STATE = "Compound - END";
 	private final String COMP_WHILE_STATE = "WHILE_COMPOUND";
 	private final String V_STATE = "Var";
@@ -28,6 +31,7 @@ public class Lexer {
 	private final String W_STATE = "While";
 	private final String I_STATE = "If";
 	private final String A_STATE = "Assign";
+	private final String F_STATE = "Function";
 
 	private final String PRINT_CMD = "print";
 	private final String PRINTLN_CMD = "println";
@@ -39,6 +43,7 @@ public class Lexer {
 		finished = false;
 		isCommented = false;
 		ifStatementMode = false;
+		isForFunctionBody = false;
 
 		compoundLevel = -1;
 		PROGRAM_STATE = new ProgramState();
@@ -53,6 +58,11 @@ public class Lexer {
 		this.table = table;
 	}
 
+	Lexer(SymbolTable table, boolean isForFunctionBody) {
+		this(table);
+		this.isForFunctionBody = isForFunctionBody;
+	}
+
 	/**
 	 * Parse one line of the source code.
 	 * @param line - source code line
@@ -64,15 +74,8 @@ public class Lexer {
 			if (!line.contains(";")) {
 				System.out.println("SyntaxError::Missing \";\"");
 				return;
-			} else {
-
-				//check if the variable declaring line has multiple semicolons
-				int counter = line.length() - line.replaceAll(";", "").length();
-				if (counter != 1) {
-					System.out.println("SyntaxError::Too much semi-colons -> expected = 1, actual = " + counter);
-					return;
-				}
 			}
+
 		} else if (line.contains(":=")) {
 			if (!line.contains(";")) {
 				System.out.println("SyntaxError::Missing \";\"");
@@ -187,9 +190,9 @@ public class Lexer {
 				state.init();
 
 				if (state.getMode() != null) {
-					statementList.add(new StatementState(table, state.getMode()));
+					statementList.add(new StatementState(table, isForFunctionBody, state.getMode()));
 				} else {
-					statementList.add(new StatementState(table));
+					statementList.add(new StatementState(table, isForFunctionBody));
 				}
 
 				//TODO test
@@ -225,6 +228,10 @@ public class Lexer {
 
 				//returns true to let the lexer know that the given word should be re-parsed with a new state.
 				return true;
+			} else if (nextState.equals(F_STATE)) {
+				currentState = new FunctionState(table);
+				functionMode = true;
+
 			} else if (nextState.equals(BACK_TO_STATEMENT)) {
 
 				/*
@@ -261,6 +268,12 @@ public class Lexer {
 				//get array list of Lexemes objects from IfState instance.
 				ArrayList<Lexemes> list = ((IfState) currentState).getLexemeList();
 				this.mergeLexemeLists(list); //merge 2 ArrayList<Lexemes> objects
+
+				currentState = statementList.get(compoundLevel);
+				((StatementState) currentState).init(); //init the attributes
+
+			} else if (nextState.equals(F_STATEMENT_SUCCESS)) {
+				//TODO add lexemes to lexemeList
 
 				currentState = statementList.get(compoundLevel);
 				((StatementState) currentState).init(); //init the attributes
@@ -344,6 +357,8 @@ public class Lexer {
 				// check if the variable is declared and defined
 				try {
 					table.getValueOf(name);
+
+					return true;
 				} catch(NullPointerException e) {
 					System.out.println("NameError::Variable " + name + " is not declared");
 				}
@@ -397,12 +412,31 @@ public class Lexer {
 		}
 	}
 
+	public void parseFunctionString(String functionStr) {
+		if (functionMode) {
+			FunctionState stmt = (FunctionState) currentState;
+			stmt.parseFunctionString(functionStr);
+
+			functionMode = false;
+
+			this.changeState();
+		}
+	}
+
 	/**
 	 * Check if the lexer is finished.
 	 * @return True if finished. Otherwise, returns false.
 	 */
 	public boolean isFinished() {
 		return finished;
+	}
+
+	/**
+	 * Insert lexeme object to the lexemeList.
+	 * @param lexeme - target object
+	 */
+	public void insertLexeme(Lexemes lexeme) {
+		this.lexemeList.add(lexeme);
 	}
 
 	/**

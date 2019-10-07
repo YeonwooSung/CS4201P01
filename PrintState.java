@@ -42,19 +42,9 @@ public class PrintState implements LexerFSA {
 
 					switch (type) {
 						case 1:
-							try {
-								if (table.getValueOf(expression) != null) {
-									nextState = STATEMENT_SUCCESS;
-									lexemes.insertLexeme("GET");
-									lexemes.insertLexeme("ID", ((Integer)table.getIdOfVariable(subStr)).toString());
-								} else {
-									nextState = BACK_TO_STATEMENT;
-									System.out.println("ValueError::Variable " + expression + " is not defined");
-								}
-							} catch (NullPointerException e) {
-								nextState = BACK_TO_STATEMENT;
-								System.out.println("NameError::Variable " + expression + " is not declared");
-							}
+							nextState = STATEMENT_SUCCESS;
+							lexemes.insertLexeme("GET");
+							lexemes.insertLexeme("ID", ((Integer)table.getIdOfVariable(subStr)).toString());
 							break;
 						case 2:
 							lexemes.insertLexeme("PRINTLN");
@@ -73,16 +63,11 @@ public class PrintState implements LexerFSA {
 
 					switch (type) {
 						case 1:
-							try {
-								table.getValueOf(subStr); // check if the variable is declared
+							nextState = STATEMENT_SUCCESS;
+							changeState = true;
 
-								nextState = STATEMENT_SUCCESS;
-								lexemes.insertLexeme("GET");
-								lexemes.insertLexeme("ID", ((Integer)table.getIdOfVariable(subStr)).toString());
-							} catch (NullPointerException e) {
-								nextState = BACK_TO_STATEMENT;
-								System.out.println("NameError::Variable " + subStr + " is not declared");
-							}
+							lexemes.insertLexeme("GET");
+							lexemes.insertLexeme("ID", ((Integer)table.getIdOfVariable(subStr)).toString());
 							break;
 						case 2:
 							lexemes.insertLexeme("PRINTLN");
@@ -107,6 +92,7 @@ public class PrintState implements LexerFSA {
 			}
 		} else {
 
+			// check the command
 			if (word.equals("get")) {
 				foundPrint = true;
 				type = 1;

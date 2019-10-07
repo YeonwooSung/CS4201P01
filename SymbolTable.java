@@ -48,13 +48,21 @@ public class SymbolTable {
 	 */
 	public int getIdOfVariable(String name) {
 		int index = 0;
+		boolean checker = false;
 
 		for (SymbolToken token : list) {
-			if (token.isNameEqualTo(name)) break;
+			if (token.isNameEqualTo(name)) {
+				checker = true;
+				break;
+			}
 			index += 1;
 		}
 
-		return index;
+		if (checker) {
+			return index;
+		} else {
+			return -1;
+		}
 	}
 
 	/**

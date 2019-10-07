@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,32 +29,87 @@ public class Analyser {
 		return false;
 	}
 
+	private static boolean checkNumberOfSemiColons(String line) {
+		//check if the variable declaring line has multiple semicolons
+		int counter = line.length() - line.replaceAll(";", "").length();
+		if (counter > 1) {
+			System.out.println("SyntaxError::Too much semi-colons -> expected = 1, actual = " + counter);
+			return false;
+		}
+
+		return true;
+	}
+
 	public static void main(String[] args) {
 		Scanner sc = new Scanner(System.in);
 		SymbolTable table = new SymbolTable();
 		Lexer lex = new Lexer(table);
 
 		while (!lex.isFinished()) {
-			String line = sc.nextLine();
+			String line = sc.nextLine().trim();
+
+			if (!checkNumberOfSemiColons(line)) {
+				continue;
+			}
 
 			// check if the read line is whitespace
 			if (line.matches("\\s+") || line.equals("")) {
 				continue;
 			}
 
-			if (line.contains("if")) {
-				String str = line.replace("if", "");
+			// check if the line starts with if statement
+			if (line.startsWith("if")) {
+				String str = line.replace("if", "").trim();
 
 				StringBuilder sb = new StringBuilder();
 				boolean checker = checkIfStatementEnds(str, sb);
 
 				while (!checker) {
 					line = sc.nextLine();
+
+					if (!checkNumberOfSemiColons(line)) {
+						continue;
+					}
+
 					checker = checkIfStatementEnds(line.trim(), sb);
 				}
 
 				lex.parseLoop("if");
 				lex.parseIfStatement(sb.toString());
+				continue;
+			}
+
+			// check if the read line is for function declaration
+			if (line.startsWith("procedure")) {
+				String str = line.replace("procedure", "").trim();
+
+				StringBuilder sb = new StringBuilder(str);
+
+				// check if the string contains the word "end", which is the end of the function body.
+				if (!str.contains("end")) {
+					// use while loop to read line until the function body ends.
+					while (!(line = sc.nextLine()).contains("end")) {
+						if (!checkNumberOfSemiColons(line)) {
+							continue;
+						}
+
+						sb.append(" ");
+						sb.append(line.trim());
+					}
+
+					sb.append(" ");
+					sb.append(line.trim());
+				}
+
+				String functionStr = sb.toString();
+
+				if (!functionStr.contains("begin")) {
+					System.out.println("SyntaxError::Function body should start with \"begin\"!");
+					continue;
+				}
+
+				lex.parseLoop("procedure");
+				lex.parseFunctionString(functionStr);
 				continue;
 			}
 
@@ -83,6 +139,12 @@ public class Analyser {
 		}
 
 		sc.close();
+
+		ArrayList<Lexemes> lexemeList = lex.getLexemeList();
+
+		for (Lexemes l : lexemeList) {
+			l.printAll();//TODO
+		}
 	}
 
 }

@@ -81,7 +81,7 @@ public class ExpressionUtils {
 							}
 
 							// check if the expression string contains '-' character
-							if (!splitBySubtractionAndAppendToLexemes(temp, str, table)) {
+							if (!splitBySubtractionAndAppendToLexemes(temp, str.trim(), table)) {
 								checker = false;
 								break outer;
 							}
@@ -94,7 +94,7 @@ public class ExpressionUtils {
 						}
 
 					} else {
-						if (!splitBySubtractionAndAppendToLexemes(temp, s, table)) {
+						if (!splitBySubtractionAndAppendToLexemes(temp, s.trim(), table)) {
 							checker = false;
 							break outer;
 						}
@@ -117,7 +117,7 @@ public class ExpressionUtils {
 						if (str.isEmpty()) continue;
 
 						// check if the expression string contains the '-'
-						if (!splitBySubtractionAndAppendToLexemes(temp, str, table)) {
+						if (!splitBySubtractionAndAppendToLexemes(temp, str.trim(), table)) {
 							checker = false;
 							break outer;
 						}
@@ -135,7 +135,7 @@ public class ExpressionUtils {
 						if (str.isEmpty()) continue;
 
 						// check if the expression string contains the '-'
-						if (!splitBySubtractionAndAppendToLexemes(temp, str, table)) {
+						if (!splitBySubtractionAndAppendToLexemes(temp, str.trim(), table)) {
 							checker = false;
 							break outer;
 						}
@@ -160,7 +160,7 @@ public class ExpressionUtils {
 
 			for (int i = 0; i <= finalIndex; i++) {
 				String s = expressionArr[i];
-				if (!splitByMultiplicationAndAppendToLexemes(lexemes, s, table)) return false;
+				if (!splitByMultiplicationAndAppendToLexemes(lexemes, s.trim(), table)) return false;
 
 				if (i < finalIndex) {
 					lexemes.insertLexeme("AROP", "-");
@@ -169,7 +169,7 @@ public class ExpressionUtils {
 				}
 			}
 		} else {
-			if (!splitByMultiplicationAndAppendToLexemes(lexemes, expression, table)) return false;
+			if (!splitByMultiplicationAndAppendToLexemes(lexemes, expression.trim(), table)) return false;
 		}
 
 		return true;
@@ -182,7 +182,7 @@ public class ExpressionUtils {
 
 			for (int i = 0; i <= finalIndex; i++) {
 				String s = expressionArr[i];
-				if (!splitByDivisionAndAppendToLexemes(lexemes, s, table)) return false;
+				if (!splitByDivisionAndAppendToLexemes(lexemes, s.trim(), table)) return false;
 
 				if (i < finalIndex) {
 					lexemes.insertLexeme("AROP", "*");
@@ -191,7 +191,7 @@ public class ExpressionUtils {
 				}
 			}
 		} else {
-			if (!splitByDivisionAndAppendToLexemes(lexemes, expression, table)) return false;
+			if (!splitByDivisionAndAppendToLexemes(lexemes, expression.trim(), table)) return false;
 		}
 
 		return true;
@@ -207,7 +207,7 @@ public class ExpressionUtils {
 
 				// check if the expression contains either relational operator or logical operator.
 				if (s.contains(">") || s.contains("<") || s.contains("==") || s.contains("or") || s.contains("and") || s.contains("not")) {
-					if (!checkNotOperations(s, lexemes, table)) return false;
+					if (!checkNotOperations(s.trim(), lexemes, table)) return false;
 				} else {
 					// check if it is variable or constant
 					if (table.contains(s)) {
@@ -257,7 +257,7 @@ public class ExpressionUtils {
 			} else {
 
 				if (expression.contains(">") || expression.contains("<") || expression.contains("==") || expression.contains("or") || expression.contains("and") || expression.contains("not")) {
-					if (!checkNotOperations(expression, lexemes, table)) return false;
+					if (!checkNotOperations(expression.trim(), lexemes, table)) return false;
 				} else {
 
 					// parse string to number to check if the expression is a number
@@ -272,6 +272,7 @@ public class ExpressionUtils {
 							lexemes.insertLexeme("CONST_NUM", expression);
 						}
 					} catch (Exception e) {
+						//TODO
 						System.out.println("TypeError::You can only use arithmetic operations with numbers");
 						return false;
 					}
@@ -307,7 +308,7 @@ public class ExpressionUtils {
 					} else if (s.equals("false")) {
 						lexemes.insertLexeme("CONST_BOOL", "true");
 					} else {
-						if (!checkAndOperations(s, lexemes, table)) return false;
+						if (!checkAndOperations(s.trim(), lexemes, table)) return false;
 					}
 
 					if (i < finalIndex) {
@@ -319,7 +320,7 @@ public class ExpressionUtils {
 			}
 
 		} else {
-			if (!checkAndOperations(expression, lexemes, table)) return false;
+			if (!checkAndOperations(expression.trim(), lexemes, table)) return false;
 		}
 
 		return true;
@@ -349,7 +350,7 @@ public class ExpressionUtils {
 					} else if (s.equals("false")) {
 						lexemes.insertLexeme("CONST_BOOL", "true");
 					} else {
-						if (!checkOrOperations(s, lexemes, table)) return false;
+						if (!checkOrOperations(s.trim(), lexemes, table)) return false;
 					}
 
 					if (i < finalIndex) {
@@ -361,7 +362,7 @@ public class ExpressionUtils {
 			}
 
 		} else {
-			if (!checkOrOperations(expression, lexemes, table)) return false;
+			if (!checkOrOperations(expression.trim(), lexemes, table)) return false;
 		}
 
 		return true;
@@ -391,7 +392,7 @@ public class ExpressionUtils {
 					} else if (s.equals("false")) {
 						lexemes.insertLexeme("CONST_BOOL", "true");
 					} else {
-						if (!checkEqualsToOperations(s, lexemes, table)) return false;
+						if (!checkEqualsToOperations(s.trim(), lexemes, table)) return false;
 					}
 
 					if (i < finalIndex) {
@@ -403,7 +404,7 @@ public class ExpressionUtils {
 			}
 
 		} else {
-			if (!checkEqualsToOperations(expression, lexemes, table)) return false;
+			if (!checkEqualsToOperations(expression.trim(), lexemes, table)) return false;
 		}
 
 		return true;
@@ -434,7 +435,7 @@ public class ExpressionUtils {
 					} else if (s.equals("false")) {
 						lexemes.insertLexeme("CONST_BOOL", "true");
 					} else {
-						if (!checkRelationalOperations(s, lexemes, table))  return false;
+						if (!checkRelationalOperations(s.trim(), lexemes, table))  return false;
 					}
 				}
 
@@ -446,7 +447,7 @@ public class ExpressionUtils {
 			}
 
 		} else {
-			if (!checkRelationalOperations(expression, lexemes, table))  return false;
+			if (!checkRelationalOperations(expression.trim(), lexemes, table))  return false;
 		}
 
 		return true;

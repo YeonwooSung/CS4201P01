@@ -2,6 +2,7 @@
 public class StatementState implements LexerFSA {
 	private boolean changeState;
 	private boolean isEmptyStmt;
+	private boolean isForFunctionBody;
 	private String nextState;
 	private String mode;
 
@@ -11,19 +12,21 @@ public class StatementState implements LexerFSA {
 	private final String W_STATE = "While";
 	private final String I_STATE = "If";
 	private final String A_STATE = "Assign";
+	private final String F_STATE = "Function";
 
 	private SymbolTable table;
 
-	StatementState(SymbolTable table) {
+	StatementState(SymbolTable table, boolean isForFunctionBody) {
 		changeState = false;
 		isEmptyStmt = true;
 		mode = null;
 
 		this.table = table;
+		this.isForFunctionBody = isForFunctionBody;
 	}
 
-	StatementState(SymbolTable table, String mode) {
-		this(table);
+	StatementState(SymbolTable table, boolean isForFunctionBody, String mode) {
+		this(table, isForFunctionBody);
 		this.mode = mode;
 	}
 
@@ -36,6 +39,12 @@ public class StatementState implements LexerFSA {
 	public void parseWord(String word) {
 		changeState = true;
 
+		// check if the given word is empty or whitespace
+		if (word.trim().equals("")) {
+			changeState = false;
+			return;
+		}
+
 		// check if the string contains the word "end", which is a keyword that finishes the compound
 		if (word.contains("end")) {
 			if (mode != null) {
@@ -44,7 +53,7 @@ public class StatementState implements LexerFSA {
 				if (mode.equals("while")) {
 					// validate the word
 					if (word.equals("end;") || word.equals("end")) {
-						if (isEmptyStmt) {
+						if (isEmptyStmt && !isForFunctionBody) {
 							changeState = false;
 							System.out.println("SyntaxError::Statement cannot be empty!");
 						}
@@ -58,7 +67,7 @@ public class StatementState implements LexerFSA {
 				}
 
 			} else if (word.equals("end")) { //check if the word is "end", which is a keyword that finishes the compound
-				if (isEmptyStmt) {
+				if (isEmptyStmt && !this.isForFunctionBody) {
 					changeState = false;
 					System.out.println("SyntaxError::Statement cannot be empty!");
 				}
@@ -67,6 +76,7 @@ public class StatementState implements LexerFSA {
 				return;
 			} else {
 				changeState = false;
+				System.out.println("!!" +word + "!!");
 				System.out.println("SyntaxError::The statement should end with \"end\"!");
 				return;
 			}
@@ -78,6 +88,8 @@ public class StatementState implements LexerFSA {
 			nextState = W_STATE;
 		} else if (word.startsWith("if")) {
 			nextState = I_STATE;
+		} else if (word.equals("procedure")) {
+			nextState = F_STATE;
 		} else {
 
 			// check if the word is a variable name
