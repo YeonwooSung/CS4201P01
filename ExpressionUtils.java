@@ -5,7 +5,10 @@ public class ExpressionUtils {
 		lexemes.insertLexeme("ID", varID);
 		lexemes.insertLexeme("IS", "=");
 
-		return addTokensToLexemes(lexemes, expression, table);
+		boolean checker = addTokensToLexemes(lexemes, expression, table);
+		lexemes.insertLexeme("VAR_END");
+
+		return checker;
 	}
 
 	public static boolean addTokensToLexemes(Lexemes lexemes, String originalStr, SymbolTable table) {

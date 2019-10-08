@@ -157,7 +157,7 @@ public class WhileState implements LexerFSA {
 		String booleanStr = expressionStr.substring(0, expressionStr.length() - 1);
 		changeState = true;
 
-		lexemes.insertLexeme("WHILE");
+		lexemes.insertLexeme("While");
 
 		// validate booleanStr
 		if (ExpressionUtils.addTokensToLexemes(lexemes, booleanStr, table)) {

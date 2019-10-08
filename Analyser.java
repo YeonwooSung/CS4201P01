@@ -33,9 +33,17 @@ public class Analyser {
 		//check if the variable declaring line has multiple semicolons
 		int counter = line.length() - line.replaceAll(";", "").length();
 		if (counter > 1) {
-			if (line.contains(";;") || line.contains(";\\s+;")) {
-				System.out.println("SyntaxError::Too much semi-colons -> expected = 1, actual = " + counter);
+			if (line.contains(";;")) {
+				System.out.println("SyntaxError::Too many semicolons");
 				return false;
+			} else {
+				Pattern pattern = Pattern.compile(";\\s+;");
+				Matcher matcher = pattern.matcher(line);
+
+				if (matcher.find()) {
+					System.out.println("SyntaxError::Too many semicolons");
+					return false;
+				}
 			}
 		}
 

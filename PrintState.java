@@ -45,14 +45,17 @@ public class PrintState implements LexerFSA {
 							nextState = STATEMENT_SUCCESS;
 							lexemes.insertLexeme("GET");
 							lexemes.insertLexeme("ID", ((Integer)table.getIdOfVariable(subStr)).toString());
+							lexemes.insertLexeme("GET_END");
 							break;
 						case 2:
 							lexemes.insertLexeme("PRINTLN");
 							checkPrintStatement(expression);
+							lexemes.insertLexeme("PRINTLN_END");
 							break;
 						case 3:
 							lexemes.insertLexeme("PRINT");
 							checkPrintStatement(expression);
+							lexemes.insertLexeme("PRINT_END");
 							break;
 						default:
 							System.out.println("Error::System error - invalid type (PrintState)");
@@ -68,14 +71,17 @@ public class PrintState implements LexerFSA {
 
 							lexemes.insertLexeme("GET");
 							lexemes.insertLexeme("ID", ((Integer)table.getIdOfVariable(subStr)).toString());
+							lexemes.insertLexeme("GET_END");
 							break;
 						case 2:
 							lexemes.insertLexeme("PRINTLN");
 							checkPrintStatement(subStr);
+							lexemes.insertLexeme("PRINTLN_END");
 							break;
 						case 3:
 							lexemes.insertLexeme("PRINT");
 							checkPrintStatement(subStr);
+							lexemes.insertLexeme("PRINT_END");
 							break;
 						default:
 							System.out.println("Error::System error - invalid type (PrintState)");

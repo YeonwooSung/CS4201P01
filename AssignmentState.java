@@ -124,6 +124,7 @@ public class AssignmentState implements LexerFSA {
 		lexemes.insertLexeme("ASSIGN");
 		lexemes.insertLexeme("ID", ((Integer) id).toString());
 		lexemes.insertLexeme("IS", "=");
+		lexemes.insertLexeme("ASSIGN_END");
 
 		// validate the expression, and add the lexeme tokens to the Lexemes object
 		if (ExpressionUtils.addTokensToLexemes(lexemes, expression, table)) {

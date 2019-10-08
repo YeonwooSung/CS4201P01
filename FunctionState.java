@@ -159,7 +159,7 @@ public class FunctionState implements LexerFSA {
 
 		lexemeList.add(0, lexeme);
 		lexeme = new Lexemes();
-		lexeme.insertLexeme("Function_FIN");
+		lexeme.insertLexeme("Function_END");
 		lexemeList.add(lexeme);
 
 		changeState = true;

@@ -100,13 +100,19 @@ public class IfState implements LexerFSA {
 		// check if the statement has "else"
 		if (hasElse) {
 			ArrayList<Lexemes> lexemeList2 = elseLexer.getLexemeList();
+
+			Lexemes elseLexeme = new Lexemes();
+			elseLexeme.insertLexeme("Else");
+
+			lexemeList2.add(0, elseLexeme);
+
 			for (Lexemes l : lexemeList2) {
 				lexemeList.add(l);
 			}
 		}
 
 		Lexemes lexeme = new Lexemes();
-		lexeme.insertLexeme("If_FIN");
+		lexeme.insertLexeme("If_END");
 		lexemeList.add(lexeme);
 
 		changeState = true;
