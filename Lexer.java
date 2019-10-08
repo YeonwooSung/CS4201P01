@@ -181,6 +181,7 @@ public class Lexer {
 
 				if (compoundLevel >= 0) {
 					currentState = compoundList.get(compoundLevel);
+
 				} else {
 					finished = true;
 				}
@@ -203,6 +204,13 @@ public class Lexer {
 				currentState = statementList.get(compoundLevel);
 			} else if (nextState.equals(COMP_END_STATE)) {
 				currentState = compoundList.get(compoundLevel);
+
+				// check if the current compound state is for while statement.
+				if (((CompoundState) currentState).getMode() != null) {
+					Lexemes lexeme = new Lexemes();
+					lexeme.insertLexeme("While_END");
+					this.lexemeList.add(lexeme);
+				}
 
 				//returns true to let the lexer know that the given word should be re-parsed with a new state.
 				return true;
@@ -284,8 +292,11 @@ public class Lexer {
 				compoundLevel += 1;
 				this.compoundList.add(new CompoundState("while"));
 
+				// get lexemes from the WhileState instance
+				Lexemes lexemes = ((WhileState) currentState).getLexemes();
+				this.lexemeList.add(lexemes);
+
 				currentState = this.compoundList.get(compoundLevel);
-				//TODO lexemes ??
 
 				//returns true to let the lexer know that the given word should be re-parsed with a new state.
 				return true;

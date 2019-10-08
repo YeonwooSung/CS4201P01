@@ -11,6 +11,10 @@ public class Lexemes {
 		lexemeList.add(new SymbolToken(name, value));
 	}
 
+	public void insertLexeme(SymbolToken token) {
+		lexemeList.add(token);
+	}
+
 	private ArrayList<SymbolToken> getList() {
 		return lexemeList;
 	}
@@ -22,6 +26,14 @@ public class Lexemes {
 		for (SymbolToken token : lexemeList) {
 			token.printTokenString();
 		}
+	}
+
+	/**
+	 * Getter for lexemeList.
+	 * @return lexemeList
+	 */
+	public ArrayList<SymbolToken> getLexemeList() {
+		return this.lexemeList;
 	}
 
 	/**

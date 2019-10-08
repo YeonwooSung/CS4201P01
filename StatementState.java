@@ -4,7 +4,7 @@ public class StatementState implements LexerFSA {
 	private boolean isEmptyStmt;
 	private boolean isForFunctionBody;
 	private String nextState;
-	private String mode;
+	public String mode;
 
 	private final String END_STATE = "Compound - END";
 	private final String V_STATE = "Var";

@@ -33,11 +33,32 @@ public class Analyser {
 		//check if the variable declaring line has multiple semicolons
 		int counter = line.length() - line.replaceAll(";", "").length();
 		if (counter > 1) {
-			System.out.println("SyntaxError::Too much semi-colons -> expected = 1, actual = " + counter);
-			return false;
+			if (line.contains(";;") || line.contains(";\\s+;")) {
+				System.out.println("SyntaxError::Too much semi-colons -> expected = 1, actual = " + counter);
+				return false;
+			}
 		}
 
 		return true;
+	}
+
+	/**
+	 * Generate a one Lexeme object that contains all lexeme tokens that the lexer generated
+	 * @param lexemeList - list of Lexemes object
+	 * @return Lexemes object
+	 */
+	private static Lexemes generateFinalLexemes(ArrayList<Lexemes> lexemeList) {
+		Lexemes lexemes = new Lexemes();
+		
+		for (Lexemes l : lexemeList) {
+			ArrayList<SymbolToken> list = l.getLexemeList();
+
+			for (SymbolToken token : list) {
+				lexemes.insertLexeme(token);
+			}
+		}
+
+		return lexemes;
 	}
 
 	public static void main(String[] args) {
@@ -145,6 +166,12 @@ public class Analyser {
 		for (Lexemes l : lexemeList) {
 			l.printAll();//TODO
 		}
+
+		// generate the Lexeme object that contians all lexeme tokens that the lexer generated
+		Lexemes lexeme = generateFinalLexemes(lexemeList);
+
+		// generate the Parser that will generate the AST
+		Parser parser = new Parser(table, lexeme);
 	}
 
 }
