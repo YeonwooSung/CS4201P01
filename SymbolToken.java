@@ -15,9 +15,9 @@ public class SymbolToken {
 	 * This constructor sets the value of the token.
 	 * @param value - The value of the lexer token
 	 */
-	SymbolToken(String value) {
-		name = null;
-		this.value = value;
+	SymbolToken(String name) {
+		this.name = name;
+		this.value = null;
 	}
 
 	/**
@@ -54,20 +54,41 @@ public class SymbolToken {
 	public String getTokenString() {
 		StringBuilder builder = new StringBuilder();
 
-		if (value != null) {
-			if (name != null) {
-				builder.append(name);
+		if (name != null) {
+			builder.append(name);
+			if (value != null) {
 				builder.append(" ");
+				builder.append(value);
 			}
-			builder.append(value);
 		}
 
 		return builder.toString();
 	}
 
+	/**
+	 * Check if the value is equal to given string.
+	 * @param s - string
+	 * @return If true, returns true. Otherwise, returns false.
+	 */
+	public boolean isValueEqualTo(String s) {
+		if (value != null) {
+			return value.equals(s);
+		}
+
+		return false;
+	}
+
+	/**
+	 * Check if the name is equal to given string.
+	 * @param s - string
+	 * @return If true, returns true. Otherwise, returns false.
+	 */
 	public boolean isNameEqualTo(String s) {
-		if (name != null) return name.equals(s);
-		else return false;
+		if (name != null) {
+			return name.equals(s);
+		}
+
+		return false;
 	}
 
 	/**

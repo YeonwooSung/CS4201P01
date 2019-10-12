@@ -161,6 +161,7 @@ public class WhileState implements LexerFSA {
 
 		// validate booleanStr
 		if (ExpressionUtils.addTokensToLexemes(lexemes, booleanStr, table)) {
+			lexemes.insertLexeme("WHILE_STMT_CONDITIONAL_END");
 			nextState = COMPOUND_STATE;
 		} else {
 			nextState = BACK_TO_STATEMENT;

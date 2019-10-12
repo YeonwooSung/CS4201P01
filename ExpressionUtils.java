@@ -215,20 +215,20 @@ public class ExpressionUtils {
 			int finalIndex = expressionArr.length - 1;
 
 			for (int i = 0; i <= finalIndex; i++) {
-				String s = expressionArr[i];
+				String s = expressionArr[i].trim();
 
 				// check if the expression contains either relational operator or logical operator.
 				if (s.contains(">") || s.contains("<") || s.contains("==") || s.contains("or") || s.contains("and") || s.contains("not")) {
-					if (!checkNotOperations(s.trim(), lexemes, table)) return false;
+					if (!checkNotOperations(s, lexemes, table)) return false;
 				} else {
 					// check if it is variable or constant
 					if (table.contains(s)) {
 						int id = table.getIdOfVariable(s);
 						lexemes.insertLexeme("ID", ((Integer) id).toString());
-					} else if (s.trim().equals("ARG_START") || s.trim().equals("ARG_END")) {
-						lexemes.insertLexeme(s.trim());
-					} else if (s.trim().startsWith("FunctionCall@")) {
-						lexemes.insertLexeme(s.trim());
+					} else if (s.equals("ARG_START") || s.equals("ARG_END")) {
+						lexemes.insertLexeme(s);
+					} else if (s.startsWith("FunctionCall@")) {
+						lexemes.insertLexeme(s);
 					} else {
 						try {
 							// check if the current string is either empty or whitespace
@@ -245,8 +245,7 @@ public class ExpressionUtils {
 								lexemes.insertLexeme("CONST_NUM", s);
 							}
 						} catch (Exception e) {
-							System.out.println("TypeError::You can only use arithmetic operations with numbers");
-							return false;
+							if (!checkNotOperations(s, lexemes, table)) return false;
 						}
 					}
 				}
@@ -295,8 +294,7 @@ public class ExpressionUtils {
 							lexemes.insertLexeme("CONST_NUM", expression);
 						}
 					} catch (Exception e) {
-						System.out.println("TypeError::You can only use arithmetic operations with numbers");
-						return false;
+						return checkNotOperations(expression, lexemes, table);
 					}
 
 				}

@@ -96,9 +96,23 @@ public class VariableState implements LexerFSA {
 						// add lexeme token
 						lexemes.insertLexeme("VAR");
 						lexemes.insertLexeme("ID", ((Integer) id).toString());
+						lexemes.insertLexeme("IS", "=");
+						lexemes.insertLexeme("CONST", varValue);
 						lexemes.insertLexeme("VAR_END");
 					} else {
-						backToStatementState("TypeError::Variable type should be one of [Number, String, Boolean] - " + word);
+						changeState = true;
+						nextState = STATEMENT_SUCCESS;
+
+						// add variable to the symbol table
+						id = table.addSymbol(varName, varValue);
+
+						// validate the expression string, and add the lexeme tokens to the array list if valid.
+						boolean checker = ExpressionUtils.addTokensToLexemes(lexemes, str, table, ((Integer)id).toString());
+
+						if (!checker) {
+							table.removeSymbol(varName);
+							nextState = BACK_TO_STATEMENT;
+						}
 					}
 				} else {
 					expressionMode = true;
@@ -107,8 +121,7 @@ public class VariableState implements LexerFSA {
 
 			} else {
 
-				if (word.equals(";")) {
-					System.out.println("here");
+				if (word.equals(";")) { // i.e. var a ;
 					changeState = true;
 					nextState = STATEMENT_SUCCESS;
 
@@ -242,10 +255,8 @@ public class VariableState implements LexerFSA {
 		if (validateValue(word)) {
 			id = table.addSymbol(varName, varValue); //add variable data to symbol table
 
-			//add lexeme token
-			lexemes.insertLexeme("VAR");
-			lexemes.insertLexeme("ID", ((Integer) id).toString());
-			lexemes.insertLexeme("VAR_END");
+			// validate the value stirng, and add lexeme token
+			ExpressionUtils.addTokensToLexemes(lexemes, varValue, table, ((Integer)id).toString());
 
 			this.changeState = true;
 			nextState = STATEMENT_SUCCESS;
@@ -284,8 +295,6 @@ public class VariableState implements LexerFSA {
 		boolean isValid;
 
 		if (!table.contains(word)) {
-			//TODO check function call
-
 			if (word.equals("true") || word.equals("false")) {
 				isValid = true;
 				varValue = word;

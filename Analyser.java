@@ -57,7 +57,8 @@ public class Analyser {
 	 */
 	private static Lexemes generateFinalLexemes(ArrayList<Lexemes> lexemeList) {
 		Lexemes lexemes = new Lexemes();
-		
+
+		// use for-each loop to iterate lexemeList
 		for (Lexemes l : lexemeList) {
 			ArrayList<SymbolToken> list = l.getLexemeList();
 
@@ -172,7 +173,7 @@ public class Analyser {
 		ArrayList<Lexemes> lexemeList = lex.getLexemeList();
 
 		for (Lexemes l : lexemeList) {
-			l.printAll();//TODO
+			//l.printAll();//TODO
 		}
 
 		// generate the Lexeme object that contians all lexeme tokens that the lexer generated
@@ -180,6 +181,8 @@ public class Analyser {
 
 		// generate the Parser that will generate the AST
 		Parser parser = new Parser(table, lexeme);
+		AbstractSyntaxTreeNode node = parser.parse(0);
+		node.printOutChildren(0);
 	}
 
 }

@@ -1,37 +1,54 @@
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 public class AbstractSyntaxTreeNode {
-	final SymbolToken token;
-    final List<AbstractSyntaxTreeNode> children;
+	private SymbolToken token;
+    private List<AbstractSyntaxTreeNode> children;
+
+    public AbstractSyntaxTreeNode(SymbolToken token) {
+        this.token = token;
+        this.children = null;
+    }
 
     public AbstractSyntaxTreeNode(SymbolToken token, List<AbstractSyntaxTreeNode> children) {
         this.token = token;
         this.children = children;
     }
 
-    public String toString() {
-        StringBuilder buffer = new StringBuilder(50);
-        generateTreeString(buffer, "", "");
-        return buffer.toString();
+    public void mergeChildren(AbstractSyntaxTreeNode node) {
+    	if (this.children == null) {
+    		this.children = new ArrayList<AbstractSyntaxTreeNode>();
+    	}
+
+    	List<AbstractSyntaxTreeNode> list = node.children;
+    	for (AbstractSyntaxTreeNode n : list) {
+    		this.children.add(n);
+    	}
     }
 
-    private void generateTreeString(StringBuilder buffer, String prefix, String childrenPrefix) {
-        buffer.append(prefix);
-        buffer.append(token.getTokenString());
-        buffer.append('\n');
+    public void printOutChildren(int level) {
+    	if (children == null) return;
 
-        Iterator<AbstractSyntaxTreeNode> it;
+    	for (AbstractSyntaxTreeNode n : children) {
+    		if (n == null || children == null) continue;
 
-        // use for loop to iterate the Iterator.
-        for (it = children.iterator(); it.hasNext();) {
-        	AbstractSyntaxTreeNode next = it.next();
-
-            if (it.hasNext()) {
-                next.generateTreeString(buffer, childrenPrefix + "戍式式 ", childrenPrefix + "弛   ");
-            } else {
-                next.generateTreeString(buffer, childrenPrefix + "戌式式 ", childrenPrefix + "    ");
-            }
-        }
+    		System.out.print(level + " ");
+    		System.out.println(n.token.getTokenString());
+    		n.printOutChildren(level + 1);
+    	}
     }
+
+    public void insertChildNode(AbstractSyntaxTreeNode child) {
+    	if (child == null) {
+    		return;
+    	}
+
+    	if (this.children == null) {
+    		this.children = new ArrayList<AbstractSyntaxTreeNode>();
+    	}
+
+    	this.children.add(child);
+    }
+
 }
