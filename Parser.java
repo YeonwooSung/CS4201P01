@@ -22,8 +22,48 @@ public class Parser {
 			String name = token.getName();
 			String targetName = name + "_END";
 
+			/* use if-else statement to compare the token's name to generate a suitable sub tree*/
+
 			if (name.equals("While")) {
-				//TODO boolean expression of while statement
+				ArrayList<SymbolToken> terminals = new ArrayList<SymbolToken>();
+				boolean checker = true;
+
+				// use for loop to iterate list of tokens
+				for (i = i + 1; i < lexemeList.size(); i++) {
+					SymbolToken t = lexemeList.get(i);
+
+					if (this.checkIfTerminal(t.getName())) {
+						terminals.add(t);
+					} else {
+						if (t.isNameEqualTo("WHILE_STMT_CONDITIONAL_END")) {
+							checker = true;
+						} else {
+							checker = false;
+						}
+
+						break;
+					}
+				}
+
+				currentIndex = i;
+
+				// check if error occurred while iterating the list of tokens
+				if (checker) {
+					AbstractSyntaxTreeNode whileTree = new AbstractSyntaxTreeNode(token);
+					this.generateSubTreeWithTerminals(whileTree, terminals, 0);
+
+					i += 1;
+					currentIndex = i;
+
+					// get sub tree for body of the while statement
+					AbstractSyntaxTreeNode subTree = this.parse(i, targetName);
+					whileTree.insertChildNode(subTree);
+
+					i = currentIndex;
+					children.add(whileTree);
+				} else {
+					continue;
+				}
 
 			} else if (name.equals("Function")) {
 				//TODO
@@ -59,11 +99,50 @@ public class Parser {
 			if (this.checkIfNewProductionRuleStarted(name)) {
 				String targetName = name + "_END";
 
-				if (name.equals("While")) {
-					//TODO parse while statement & update currentIndex
+				/* use if-else statement to compare the token's name to generate suitable sub tree*/
 
+				if (name.equals("While")) {
+					ArrayList<SymbolToken> terminals = new ArrayList<SymbolToken>();
+					boolean checker = true;
+
+					// use for loop to iterate list of tokens
+					for (i = i + 1; i < lexemeList.size(); i++) {
+						SymbolToken t = lexemeList.get(i);
+
+						if (this.checkIfTerminal(t.getName())) {
+							terminals.add(t);
+						} else {
+							if (t.isNameEqualTo("WHILE_STMT_CONDITIONAL_END")) {
+								checker = true;
+							} else {
+								checker = false;
+							}
+
+							break;
+						}
+					}
+
+					currentIndex = i;
+
+					// check if error occurred while iterating the list of tokens
+					if (checker) {
+						AbstractSyntaxTreeNode whileTree = new AbstractSyntaxTreeNode(token);
+						this.generateSubTreeWithTerminals(whileTree, terminals, 0);
+
+						i += 1;
+						currentIndex = i;
+
+						// get sub tree for body of the while statement
+						AbstractSyntaxTreeNode subTree = this.parse(i, targetName);
+						whileTree.insertChildNode(subTree);
+
+						return whileTree;
+					} else {
+						return null;
+					}
 				} else if (name.equals("If")) {
 					//TODO parse if statement & update currentIndex
+					return parseIfStatement(i, token);
 
 				} else if (name.equals("VAR")) {
 					i += 1;
@@ -125,6 +204,7 @@ public class Parser {
 					i += 1;
 					SymbolToken token_next = lexemeList.get(i);
 
+					// check if the next token is "=".
 					if (token_next.isNameEqualTo("IS")) {
 						i += 1;
 						AbstractSyntaxTreeNode isNode = new AbstractSyntaxTreeNode(token_next);
@@ -191,11 +271,6 @@ public class Parser {
 			} else if (name.equals(endName)) {
 				currentIndex = i;
 				break;
-			} else if (name.equals("PRINT") || name.equals("PRINTLN")) {
-				AbstractSyntaxTreeNode subTree = this.parse(i + 1, name + "_END");
-				i = currentIndex;
-
-				children.add(subTree);
 
 			} else {
 				ArrayList<SymbolToken> terminals = new ArrayList<SymbolToken>();
@@ -229,6 +304,63 @@ public class Parser {
 		}
 
 		return new AbstractSyntaxTreeNode(this.lexemeList.get(startIndex), children);
+	}
+
+	private AbstractSyntaxTreeNode parseIfStatement(int i, SymbolToken token) {
+		ArrayList<SymbolToken> terminals = new ArrayList<SymbolToken>();
+		boolean checker = true;
+		boolean boolExpressionEnd = false;
+		boolean hasElse = false;
+		int startIndex = i + 1;
+		int endIndex = startIndex;
+
+		// use for loop to iterate list of tokens
+		for (i = startIndex; i < lexemeList.size(); i++) {
+			SymbolToken t = lexemeList.get(i);
+
+			if (boolExpressionEnd) {
+				if (t.isNameEqualTo("If_END")) {
+					break;
+				} else if (t.isNameEqualTo("Else")) {
+					hasElse = true;
+				}
+
+			} else {
+				if (this.checkIfTerminal(t.getName())) {
+					terminals.add(t);
+				} else {
+					if (t.isNameEqualTo("then")) {
+						checker = true;
+					} else {
+						checker = false;
+					}
+
+					boolExpressionEnd = true;
+					endIndex = i;
+				}
+			}
+		}
+
+		currentIndex = endIndex;
+
+		// check if error occurred while iterating the list of tokens
+		if (checker) {
+			AbstractSyntaxTreeNode ifNode = new AbstractSyntaxTreeNode(token);
+			this.generateSubTreeWithTerminals(ifNode, terminals, 0);
+
+			// check if this if statement has "else" statement
+			if (hasElse) {
+				//TODO
+
+			} else {
+				//TODO
+			}
+
+			currentIndex = i;
+			return ifNode;
+		} else {
+			return null;
+		}
 	}
 
 	/**
