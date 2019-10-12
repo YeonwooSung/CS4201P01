@@ -8,7 +8,7 @@ public class AbstractSyntaxTreeNode {
 
     public AbstractSyntaxTreeNode(SymbolToken token) {
         this.token = token;
-        this.children = null;
+        this.children = new ArrayList<AbstractSyntaxTreeNode>();
     }
 
     public AbstractSyntaxTreeNode(SymbolToken token, List<AbstractSyntaxTreeNode> children) {
@@ -17,38 +17,51 @@ public class AbstractSyntaxTreeNode {
     }
 
     public void mergeChildren(AbstractSyntaxTreeNode node) {
-    	if (this.children == null) {
-    		this.children = new ArrayList<AbstractSyntaxTreeNode>();
-    	}
-
     	List<AbstractSyntaxTreeNode> list = node.children;
     	for (AbstractSyntaxTreeNode n : list) {
     		this.children.add(n);
     	}
     }
 
-    public void printOutChildren(int level) {
-    	if (children == null) return;
-
-    	for (AbstractSyntaxTreeNode n : children) {
-    		if (n == null || children == null) continue;
-
-    		System.out.print(level + " ");
-    		System.out.println(n.token.getTokenString());
-    		n.printOutChildren(level + 1);
-    	}
+    /**
+     * Print out the AST.
+     */
+    public void printOutChildren() {
+    	StringBuilder buffer = new StringBuilder();
+    	this.generateTreeString(buffer, "", "");
+    	System.out.println(buffer.toString());
     }
 
+    /**
+     * Insert the child node to the array list.
+     * @param child - child node
+     */
     public void insertChildNode(AbstractSyntaxTreeNode child) {
     	if (child == null) {
     		return;
     	}
 
-    	if (this.children == null) {
-    		this.children = new ArrayList<AbstractSyntaxTreeNode>();
-    	}
-
     	this.children.add(child);
     }
 
+    /**
+     * Generate the tree string.
+     * @param buffer - buffer to store the generated tree string
+     * @param prefix - prefix
+     * @param childrenPrefix - prefix for children
+     */
+    private void generateTreeString(StringBuilder buffer, String prefix, String childrenPrefix) {
+        buffer.append(prefix);
+        buffer.append(this.token.getTokenString());
+        buffer.append('\n');
+
+        for (Iterator<AbstractSyntaxTreeNode> it = children.iterator(); it.hasNext();) {
+        	AbstractSyntaxTreeNode next = it.next();
+            if (it.hasNext()) {
+                next.generateTreeString(buffer, childrenPrefix + "戍式式 ", childrenPrefix + "弛   ");
+            } else {
+                next.generateTreeString(buffer, childrenPrefix + "戌式式 ", childrenPrefix + "    ");
+            }
+        }
+    }
 }

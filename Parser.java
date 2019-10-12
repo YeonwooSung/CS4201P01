@@ -13,6 +13,11 @@ public class Parser {
 		currentIndex = 0;
 	}
 
+	/**
+	 * Parse the lexemes to generate the AST.
+	 * @param startIndex - start index
+	 * @return The generated syntax tree
+	 */
 	public AbstractSyntaxTreeNode parse(int startIndex) {
 		ArrayList<AbstractSyntaxTreeNode> children = new ArrayList<AbstractSyntaxTreeNode>();
 
@@ -55,11 +60,25 @@ public class Parser {
 					i += 1;
 					currentIndex = i;
 
-					// get sub tree for body of the while statement
-					AbstractSyntaxTreeNode subTree = this.parse(i, targetName);
-					whileTree.insertChildNode(subTree);
+					for (; i < lexemeList.size(); i++) {
+						SymbolToken t = lexemeList.get(i);
 
-					i = currentIndex;
+						if (t.isNameEqualTo("While_END")) {
+							break;
+						}
+
+						AbstractSyntaxTreeNode subTree = this.parse(i, t.getName() + "_END");
+						whileTree.insertChildNode(subTree);
+
+						i = currentIndex;
+
+						if (!lexemeList.get(i).getName().endsWith("_END")) {
+							i += 1;
+						}
+					}
+
+					currentIndex = i;
+
 					children.add(whileTree);
 				} else {
 					continue;
@@ -69,7 +88,10 @@ public class Parser {
 				//TODO
 
 			} else if (name.equals("If")) {
-				//TODO
+				AbstractSyntaxTreeNode ifNode = parseIfStatement(i, token);
+				children.add(ifNode);
+
+				i = currentIndex;
 
 			} else {
 				AbstractSyntaxTreeNode subTree = this.parse(i, targetName);
@@ -132,16 +154,32 @@ public class Parser {
 						i += 1;
 						currentIndex = i;
 
-						// get sub tree for body of the while statement
-						AbstractSyntaxTreeNode subTree = this.parse(i, targetName);
-						whileTree.insertChildNode(subTree);
+						// use for loop to parse all statements in the while statement
+						for (; i < lexemeList.size(); i++) {
+							SymbolToken t = lexemeList.get(i);
+
+							// check if the while statement ends
+							if (t.isNameEqualTo("While_END")) {
+								break;
+							}
+
+							AbstractSyntaxTreeNode subTree = this.parse(i, t.getName() + "_END");
+							whileTree.insertChildNode(subTree);
+
+							i = currentIndex;
+
+							if (!lexemeList.get(i).getName().endsWith("_END")) {
+								i += 1;
+							}
+						}
+
+						currentIndex = i;
 
 						return whileTree;
 					} else {
 						return null;
 					}
 				} else if (name.equals("If")) {
-					//TODO parse if statement & update currentIndex
 					return parseIfStatement(i, token);
 
 				} else if (name.equals("VAR")) {
@@ -306,6 +344,12 @@ public class Parser {
 		return new AbstractSyntaxTreeNode(this.lexemeList.get(startIndex), children);
 	}
 
+	/**
+	 * Parse the if-statement, and generate the sub tree for the if-statement.
+	 * @param i - start index
+	 * @param token - token for if statement.
+	 * @return If error occurs, returns null. Otherwise, returns the sub tree.
+	 */
 	private AbstractSyntaxTreeNode parseIfStatement(int i, SymbolToken token) {
 		ArrayList<SymbolToken> terminals = new ArrayList<SymbolToken>();
 		boolean checker = true;
@@ -350,13 +394,65 @@ public class Parser {
 
 			// check if this if statement has "else" statement
 			if (hasElse) {
-				//TODO
+				AbstractSyntaxTreeNode thenNode = new AbstractSyntaxTreeNode(lexemeList.get(endIndex));
 
+				for (i = endIndex + 1; i < lexemeList.size(); i++) {
+					SymbolToken t = lexemeList.get(i);
+
+					if (t.isNameEqualTo("Else")) {
+						break;
+					}
+
+					AbstractSyntaxTreeNode subTree = this.parse(i, t.getName() + "_END");
+					thenNode.insertChildNode(subTree);
+
+					i = currentIndex + 1;
+				}
+
+				ifNode.insertChildNode(thenNode);
+
+				/* parse the else-statement */
+
+				AbstractSyntaxTreeNode elseNode = new AbstractSyntaxTreeNode(lexemeList.get(i));
+				
+				for (i = i + 1; i < lexemeList.size(); i++) {
+					SymbolToken t = lexemeList.get(i);
+
+					if (t.isNameEqualTo("If_END")) {
+						break;
+					}
+
+					AbstractSyntaxTreeNode subTree = this.parse(i, t.getName() + "_END");
+					elseNode.insertChildNode(subTree);
+
+					i = currentIndex + 1;
+				}
+
+				ifNode.insertChildNode(elseNode);
+
+				currentIndex = i;
 			} else {
-				//TODO
+				/* parse the then-statement of the if-statement */
+
+				AbstractSyntaxTreeNode thenNode = new AbstractSyntaxTreeNode(lexemeList.get(endIndex));
+
+				for (i = endIndex + 1; i < lexemeList.size(); i++) {
+					SymbolToken t = lexemeList.get(i);
+
+					if (t.isNameEqualTo("If_END")) {
+						break;
+					}
+
+					AbstractSyntaxTreeNode subTree = this.parse(i, t.getName() + "_END");
+					thenNode.insertChildNode(subTree);
+
+					i = currentIndex + 1;
+				}
+
+				ifNode.insertChildNode(thenNode);
+				currentIndex = i;
 			}
 
-			currentIndex = i;
 			return ifNode;
 		} else {
 			return null;
@@ -375,6 +471,7 @@ public class Parser {
 		int counter = 1;
 		int i = startIndex;
 
+		// check if the list is an empty list
 		if (terminals.size() == 0) {
 			return 0;
 		}
@@ -401,19 +498,23 @@ public class Parser {
 
 				SymbolToken token2 = terminals.get(i);
 
+				// check if the current token is an operator
 				if (this.checkIfOperator(token2.getName())) {
 					System.out.println("SyntaxError::Operator \"not\" requries operand!");
 					return counter;
 
+					//check if the current token is '('
 				} else if (token2.getName().endsWith("LPAREN")) {
 					AbstractSyntaxTreeNode tempNode = new AbstractSyntaxTreeNode(token2);
 					node1.insertChildNode(tempNode);
 
-				}
-			}
+					// check if the current token is an operand
+				} else if (!this.checkIfOperator(token2.getName())) {
+					AbstractSyntaxTreeNode node2 = new AbstractSyntaxTreeNode(token2);
+					node1.insertChildNode(node2);
 
-			//check if the expression starts with an operator.
-			if (token1.getName().endsWith("OP")) {
+				}
+			} else if (token1.getName().endsWith("OP")) { //check if the expression starts with an operator.
 				System.out.println("SyntaxError::Expression cannot start with operator!");
 				return counter;
 			}
@@ -440,8 +541,10 @@ public class Parser {
 					root.insertChildNode(node2);
 				}
 				return counter;
+
+				// check if the current token is "not" operator
 			} else if (token2.isValueEqualTo("not")) {
-				System.out.println("SyntaxError::Operator not is an unary operator!");
+				System.out.println("SyntaxError::Operator \"not\" is an unary operator!");
 				return counter;
 
 			}
@@ -459,14 +562,18 @@ public class Parser {
 				i += ret;
 				counter += ret;
 
+				// check if current token is ')'
 			} else if (token3.isNameEqualTo("RPAREN")) {
 				System.out.println("SyntaxError::\"(\" cannot be followed by operator!");
 				return counter;
+
+				// check if the current token is the "not" operator
 			} else if (token3.isValueEqualTo("not")) {
 				i += 1;
 				counter += 1;
 				SymbolToken token4 = terminals.get(i);
 
+				// check if the current token is an operator
 				if (this.checkIfOperator(token4.getName())) {
 					System.out.println("SyntaxError::Operator \"not\" requries operand!");
 					return counter;
@@ -483,6 +590,7 @@ public class Parser {
 			node2.insertChildNode(node1);
 			node2.insertChildNode(node3);
 
+			// check if the current token is the last terminal in the list
 			if (i != terminals.size()) {
 				topNode = node2;
 			} else {
@@ -505,7 +613,7 @@ public class Parser {
 					return counter;
 				}
 
-				// check if current token is operator
+				// Check if current token is operator, because the operand cannot be followed by other operand
 				if (this.checkIfOperator(t1.getName())) {
 					i += 1;
 					counter += 1;
@@ -514,7 +622,7 @@ public class Parser {
 					AbstractSyntaxTreeNode n2 = new AbstractSyntaxTreeNode(t2);
 
 					if (t2.isNameEqualTo("RPAREN")) {
-						System.out.println("SyntaxError::Operator cannot be followed with operator!");
+						System.out.println("SyntaxError::Operator cannot be followed by operator!");
 						return counter;
 
 					} else if (t2.isValueEqualTo("not")) {
@@ -523,7 +631,7 @@ public class Parser {
 						n2.insertChildNode(n3);
 
 					} else if (checkIfOperator(t2.getName())) {
-						System.out.println("SyntaxError::Operator cannot be followed with operator!");
+						System.out.println("SyntaxError::Operator cannot be followed by operator!");
 						return counter;
 
 					} else if (t2.isNameEqualTo("LPAREN")) {
@@ -543,7 +651,7 @@ public class Parser {
 					n1.insertChildNode(n2);
 					topNode = n1;
 				}  else {
-					System.out.println("SyntaxError::Operand cannot be followed with operand!");
+					System.out.println("SyntaxError::Operand cannot be followed by operand!");
 					return counter;
 				}
 			}

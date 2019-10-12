@@ -326,7 +326,7 @@ public class ExpressionUtils {
 					if (s.equals("true")) {
 						lexemes.insertLexeme("CONST_BOOL", "true");
 					} else if (s.equals("false")) {
-						lexemes.insertLexeme("CONST_BOOL", "true");
+						lexemes.insertLexeme("CONST_BOOL", "false");
 					} else {
 						if (!checkAndOperations(s.trim(), lexemes, table)) return false;
 					}
@@ -368,7 +368,7 @@ public class ExpressionUtils {
 					if (s.equals("true")) {
 						lexemes.insertLexeme("CONST_BOOL", "true");
 					} else if (s.equals("false")) {
-						lexemes.insertLexeme("CONST_BOOL", "true");
+						lexemes.insertLexeme("CONST_BOOL", "false");
 					} else {
 						if (!checkOrOperations(s.trim(), lexemes, table)) return false;
 					}
@@ -410,7 +410,7 @@ public class ExpressionUtils {
 					if (s.equals("true")) {
 						lexemes.insertLexeme("CONST_BOOL", "true");
 					} else if (s.equals("false")) {
-						lexemes.insertLexeme("CONST_BOOL", "true");
+						lexemes.insertLexeme("CONST_BOOL", "false");
 					} else {
 						if (!checkEqualsToOperations(s.trim(), lexemes, table)) return false;
 					}
@@ -453,7 +453,7 @@ public class ExpressionUtils {
 					if (s.equals("true")) {
 						lexemes.insertLexeme("CONST_BOOL", "true");
 					} else if (s.equals("false")) {
-						lexemes.insertLexeme("CONST_BOOL", "true");
+						lexemes.insertLexeme("CONST_BOOL", "false");
 					} else {
 						if (!checkRelationalOperations(s.trim(), lexemes, table))  return false;
 					}

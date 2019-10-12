@@ -145,36 +145,28 @@ public class Analyser {
 
 			// check if the read line contains double quote character
 			if (line.contains("\"")) {
-				StringBuilder builder = new StringBuilder(line);
 				int count = line.length() - line.replace("\"", "").length();
 
-				// if the number of double quote characters is odd number, we need to read more lines until we get remaining double quote character
+				// check the number of
 				if (count % 2 != 0) {
-					while (true) {
-						String newLine = sc.nextLine();
-						builder.append(newLine);
-
-						int c = newLine.length() - newLine.replace("\"", "").length();
-
-						if (c % 2 != 0) {
-							break;
-						}
-					}
+					System.out.println("SyntaxError::Invalid number of double quotation mark - expected = " + (count + 1) + " actual = " + count);
+					continue;
 				}
 
-				lex.parseLine(builder.toString().trim());
-			} else {
-				lex.parseLine(line.trim());
 			}
+
+			lex.parseLine(line.trim());
 		}
 
 		sc.close();
 
 		ArrayList<Lexemes> lexemeList = lex.getLexemeList();
 
-		for (Lexemes l : lexemeList) {
-			//l.printAll();//TODO
-		}
+//		for (Lexemes l : lexemeList) {
+//			l.printAll();//TODO
+//		}
+//
+//		System.out.println("-----------");
 
 		// generate the Lexeme object that contians all lexeme tokens that the lexer generated
 		Lexemes lexeme = generateFinalLexemes(lexemeList);
@@ -182,7 +174,7 @@ public class Analyser {
 		// generate the Parser that will generate the AST
 		Parser parser = new Parser(table, lexeme);
 		AbstractSyntaxTreeNode node = parser.parse(0);
-		node.printOutChildren(0);
+		node.printOutChildren();
 	}
 
 }
