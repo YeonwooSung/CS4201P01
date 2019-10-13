@@ -7,6 +7,7 @@ public class StatementState implements LexerFSA {
 	public String mode;
 
 	private final String END_STATE = "Compound - END";
+	private final String ERROR_STATE = "ERROR - Statement";
 	private final String V_STATE = "Var";
 	private final String PR_STATE = "Print";
 	private final String W_STATE = "While";
@@ -54,11 +55,12 @@ public class StatementState implements LexerFSA {
 					// validate the word
 					if (word.equals("end;") || word.equals("end")) {
 						if (isEmptyStmt && !isForFunctionBody) {
-							changeState = false;
+							nextState = ERROR_STATE;
 							System.out.println("SyntaxError::Statement cannot be empty!");
+						} else {
+							nextState = END_STATE;
 						}
 
-						nextState = END_STATE;
 						return;
 					} else {
 						System.out.println("SyntaxError::Unexpected word : " + word);
@@ -68,15 +70,15 @@ public class StatementState implements LexerFSA {
 
 			} else if (word.equals("end")) { //check if the word is "end", which is a keyword that finishes the compound
 				if (isEmptyStmt && !this.isForFunctionBody) {
-					changeState = false;
+					nextState = ERROR_STATE;
 					System.out.println("SyntaxError::Statement cannot be empty!");
+				} else {
+					nextState = END_STATE;
 				}
 
-				nextState = END_STATE;
 				return;
 			} else {
-				changeState = false;
-				System.out.println("!!" +word + "!!");
+				nextState = ERROR_STATE;
 				System.out.println("SyntaxError::The statement should end with \"end\"!");
 				return;
 			}
@@ -96,7 +98,7 @@ public class StatementState implements LexerFSA {
 			if (table.contains(word)) {
 				nextState = A_STATE;
 			} else {
-				changeState = false;
+				nextState = ERROR_STATE;
 				System.out.println("NameError::Cannot find function or variable called \'" + word + "\'");
 				return;
 			}

@@ -130,6 +130,7 @@ public class FunctionState implements LexerFSA {
 			return;
 		}
 
+		// check if the function contains the "return" statement
 		if (functionStr.contains("return")) {
 			String[] functionStrArr = functionStr.split("return");
 			int endIndex = functionStrArr.length;
@@ -146,11 +147,6 @@ public class FunctionState implements LexerFSA {
 		} else {
 			// parse the function string
 			this.lexer.parseLine(this.functionStr);
-		}
-
-		//TODO test
-		if (lexer.isFinished()) {
-			//System.out.println("DEBUGGING - lexer.isFinished() == true  (in FunctionState.java)");
 		}
 
 		lexemeList = lexer.getLexemeList();

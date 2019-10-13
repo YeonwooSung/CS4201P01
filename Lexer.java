@@ -7,7 +7,9 @@ public class Lexer {
 	private boolean ifStatementMode;
 	private boolean functionMode;
 	private boolean isForFunctionBody;
+	private boolean hasError;
 	private int compoundLevel; //to check nested compounds
+	private String programName;
 
 	//private SymbolTable table;
 	private LexerFSA currentState;
@@ -18,6 +20,7 @@ public class Lexer {
 
 	private SymbolTable table;
 
+	private final String ERROR_STATE = "ERROR - Statement";
 	private final String BACK_TO_STATEMENT = "Back To Statement";
 	private final String V_STATEMENT_SUCCESS = "V - STMT SUCCESS";
 	private final String PR_STATEMENT_SUCCESS = "PR - STMT SUCCESS";
@@ -40,6 +43,7 @@ public class Lexer {
 	private final LexerFSA PROGRAM_STATE;
 
 	Lexer(SymbolTable table) {
+		hasError = false;
 		finished = false;
 		isCommented = false;
 		ifStatementMode = false;
@@ -149,6 +153,12 @@ public class Lexer {
 				}
 
 			}
+
+			// check whether the error was occurred while parsing the current line
+			if (hasError) {
+				hasError = false;
+				return;
+			}
 		}
 	}
 
@@ -183,6 +193,7 @@ public class Lexer {
 					currentState = compoundList.get(compoundLevel);
 
 				} else {
+					programName = ((ProgramState)this.PROGRAM_STATE).getProgramName();
 					finished = true;
 				}
 
@@ -241,6 +252,7 @@ public class Lexer {
 				functionMode = true;
 
 			} else if (nextState.equals(BACK_TO_STATEMENT)) {
+				hasError = true;
 
 				/*
 				 * If the lexer found some syntax error, the lexer's fsa will go back to the latest statement state.
@@ -301,10 +313,16 @@ public class Lexer {
 				//returns true to let the lexer know that the given word should be re-parsed with a new state.
 				return true;
 
+			} else if (nextState.equals(ERROR_STATE)) {
+				hasError = true;
+				((StatementState) currentState).init();
+
 			} else {
 				System.out.print("StateNameError::Invalid state name (");
 				System.out.print(nextState);
 				System.out.println(")");
+
+				hasError = true;
 			}
 
 		}
@@ -458,5 +476,13 @@ public class Lexer {
 	 */
 	public ArrayList<Lexemes> getLexemeList() {
 		return lexemeList;
+	}
+
+	/**
+	 * Getter for programName.
+	 * @return programName
+	 */
+	public String getProgramName() {
+		return programName;
 	}
 }

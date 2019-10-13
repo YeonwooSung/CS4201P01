@@ -182,7 +182,16 @@ public class VariableState implements LexerFSA {
 						if (word.contains(":=")) {
 							validateVarNameAndValue(word);
 						} else {
-							varName = word.replace(";", "");
+							String str = word.replace(";", "");
+
+							// validate the variable name
+							if (this.validateName(str)) {
+								varName = str;
+							} else {
+								changeState = true;
+								nextState = BACK_TO_STATEMENT;
+								return;
+							}
 
 							id = table.addSymbol(varName, varValue);
 							nextState = STATEMENT_SUCCESS;
@@ -217,7 +226,9 @@ public class VariableState implements LexerFSA {
 				nextState = BACK_TO_STATEMENT;
 			}
 		} else {
-			varName = word;
+			if (validateName(word)) {
+				varName = word;
+			}
 		}
 	}
 
@@ -333,11 +344,23 @@ public class VariableState implements LexerFSA {
 	 */
 	private boolean validateName(String str) {
 		if (str.equals("program") || str.equals("begin") || str.equals("end") || str.equals("if") || str.equals("else") || str.equals("while") || str.equals("print") || str.equals("println") || str.equals("procedure") || str.equals("get") || str.equals("function")) {
-			System.out.println("KeywordError::Cannot use the keyword string as a name of the program!");
+			System.out.println("KeywordError::Cannot use the keyword string as a name of the variable!");
+			return false;
+		} else if (str.equals("true") || str.equals("false") || str.contains("(") || str.contains(")")) {
+			System.out.println("KeywordError::Cannot use the keyword string as a name of the variable!");
 			return false;
 		}
 
-		return true;
+		// use try-catch statement to check if the varaible name is a number
+		try {
+			Integer.parseInt(str.trim());
+			Double.parseDouble(str.trim());
+		} catch (NumberFormatException e) {
+			return true;
+		}
+
+		System.out.println("NameError::Variable ID cannot be a number!");
+		return false;
 	}
 
 	@Override

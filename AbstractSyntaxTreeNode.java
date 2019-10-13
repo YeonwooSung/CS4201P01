@@ -16,6 +16,26 @@ public class AbstractSyntaxTreeNode {
         this.children = children;
     }
 
+    /**
+     * Returns the token string.
+     * @return the token string
+     */
+    public String getTokenString() {
+    	return this.token.getTokenString();
+    }
+
+    /**
+     * Returns the token name.
+     * @return name of the token
+     */
+    public String getTokenName() {
+    	return this.token.getName();
+    }
+
+    /**
+     * Merge the given tree to this tree node.
+     * @param node - root node of the target tree
+     */
     public void mergeChildren(AbstractSyntaxTreeNode node) {
     	List<AbstractSyntaxTreeNode> list = node.children;
     	for (AbstractSyntaxTreeNode n : list) {

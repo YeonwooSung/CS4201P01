@@ -138,10 +138,12 @@ public class SymbolTable {
 	public String checkFunction(String expression) {
 		String newExpression = expression;
 
+		// use for-each loop to iterate the list of functions to check the function call
 		for (SymbolToken token : functionList) {
 			String functionName = token.getName();
 			int argNum = Integer.parseInt(token.getValue());
 
+			// check if the expression contains the function name
 			if (expression.contains(functionName)) {
 				StringBuilder regexBuilder = new StringBuilder(functionName);
 				regexBuilder.append("\\(");
@@ -159,10 +161,15 @@ public class SymbolTable {
 				Pattern p = Pattern.compile(regex);
 				Matcher m = p.matcher(newExpression);
 
-				boolean checker = true;
+				boolean checker = false;
+
+				if (expression.contains(functionName + "(")) {
+					checker = true;
+				}
+
 				StringBuilder sb = new StringBuilder();
 
-				// use while loop to get all regex strings
+				// use while loop to get all regular expression strings
 				while (m.find()) {
 					checker = false;
 					int startIndex = m.start();
@@ -172,26 +179,20 @@ public class SymbolTable {
 				    	sb.append(newExpression.substring(0, startIndex));
 
 				    	String subStr = newExpression.substring(startIndex, endIndex);
-				    	subStr = subStr.replace("(", "").replace(")", "").replace(",", " ").replace(functionName, "");
+				    	subStr = subStr.replace("(", "{").replace(")", "}");
 
 				    	sb.append("FunctionCall@");
-				    	sb.append(functionName);
-				    	sb.append("[");
 				    	sb.append(subStr);
-				    	sb.append("] ");
 
 				    	if (endIndex < newExpression.length() - 1) {
 				    		sb.append(newExpression.substring(endIndex));
 				    	}
 				    } else {
 				    	String subStr = newExpression.substring(startIndex, endIndex);
-				    	subStr = subStr.replace("(", "").replace(")", "").replace(",", " ").replace(functionName, "");
+				    	subStr = subStr.replace("(", "{").replace(")", "}");
 
 				    	sb.append("FunctionCall@");
-				    	sb.append(functionName);
-				    	sb.append("[");
 				    	sb.append(subStr);
-				    	sb.append("] ");
 
 				    	if (endIndex < newExpression.length() - 1) {
 				    		sb.append(newExpression.substring(endIndex));

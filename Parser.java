@@ -1,717 +1,205 @@
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Parser {
-	private int currentIndex;
-	private SymbolTable table;
-	private Lexemes lexemes;
-	private ArrayList<SymbolToken> lexemeList;
-
-	Parser(SymbolTable table, Lexemes lexemes) {
-		this.table = table;
-		this.lexemes = lexemes;
-		lexemeList = lexemes.getLexemeList();
-		currentIndex = 0;
-	}
-
-	/**
-	 * Parse the lexemes to generate the AST.
-	 * @param startIndex - start index
-	 * @return The generated syntax tree
-	 */
-	public AbstractSyntaxTreeNode parse(int startIndex) {
-		ArrayList<AbstractSyntaxTreeNode> children = new ArrayList<AbstractSyntaxTreeNode>();
-
-		// use for loop to iterate the ArrayList of SymbolTokens
-		for (int i = startIndex; i < lexemeList.size(); i++) {
-			SymbolToken token = lexemeList.get(i);
-			String name = token.getName();
-			String targetName = name + "_END";
-
-			/* use if-else statement to compare the token's name to generate a suitable sub tree*/
-
-			if (name.equals("While")) {
-				ArrayList<SymbolToken> terminals = new ArrayList<SymbolToken>();
-				boolean checker = true;
-
-				// use for loop to iterate list of tokens
-				for (i = i + 1; i < lexemeList.size(); i++) {
-					SymbolToken t = lexemeList.get(i);
-
-					if (this.checkIfTerminal(t.getName())) {
-						terminals.add(t);
-					} else {
-						if (t.isNameEqualTo("WHILE_STMT_CONDITIONAL_END")) {
-							checker = true;
-						} else {
-							checker = false;
-						}
-
-						break;
-					}
-				}
-
-				currentIndex = i;
-
-				// check if error occurred while iterating the list of tokens
-				if (checker) {
-					AbstractSyntaxTreeNode whileTree = new AbstractSyntaxTreeNode(token);
-					this.generateSubTreeWithTerminals(whileTree, terminals, 0);
-
-					i += 1;
-					currentIndex = i;
-
-					for (; i < lexemeList.size(); i++) {
-						SymbolToken t = lexemeList.get(i);
-
-						if (t.isNameEqualTo("While_END")) {
-							break;
-						}
-
-						AbstractSyntaxTreeNode subTree = this.parse(i, t.getName() + "_END");
-						whileTree.insertChildNode(subTree);
-
-						i = currentIndex;
-
-						if (!lexemeList.get(i).getName().endsWith("_END")) {
-							i += 1;
-						}
-					}
-
-					currentIndex = i;
-
-					children.add(whileTree);
-				} else {
-					continue;
-				}
-
-			} else if (name.equals("Function")) {
-				//TODO
-
-			} else if (name.equals("If")) {
-				AbstractSyntaxTreeNode ifNode = parseIfStatement(i, token);
-				children.add(ifNode);
-
-				i = currentIndex;
-
-			} else {
-				AbstractSyntaxTreeNode subTree = this.parse(i, targetName);
-				i = currentIndex;
-
-				// to avoid NullPointerException
-				if (subTree != null) {
-					children.add(subTree);
-				}
-			}
-		}
-
-		SymbolToken token = new SymbolToken();
-		token.setName("Program");
-		return new AbstractSyntaxTreeNode(token, children);
-	}
-
-	private AbstractSyntaxTreeNode parse(int startIndex, String endName) {
-		ArrayList<AbstractSyntaxTreeNode> children = new ArrayList<AbstractSyntaxTreeNode>();
-
-		// use for loop to iterate the ArrayList of SymbolTokens
-		for (int i = startIndex; i < lexemeList.size(); i++) {
-			currentIndex = i;
-			SymbolToken token = lexemeList.get(i);
-			String name = token.getName();
-
-			if (this.checkIfNewProductionRuleStarted(name)) {
-				String targetName = name + "_END";
-
-				/* use if-else statement to compare the token's name to generate suitable sub tree*/
-
-				if (name.equals("While")) {
-					ArrayList<SymbolToken> terminals = new ArrayList<SymbolToken>();
-					boolean checker = true;
-
-					// use for loop to iterate list of tokens
-					for (i = i + 1; i < lexemeList.size(); i++) {
-						SymbolToken t = lexemeList.get(i);
-
-						if (this.checkIfTerminal(t.getName())) {
-							terminals.add(t);
-						} else {
-							if (t.isNameEqualTo("WHILE_STMT_CONDITIONAL_END")) {
-								checker = true;
-							} else {
-								checker = false;
-							}
-
-							break;
-						}
-					}
-
-					currentIndex = i;
-
-					// check if error occurred while iterating the list of tokens
-					if (checker) {
-						AbstractSyntaxTreeNode whileTree = new AbstractSyntaxTreeNode(token);
-						this.generateSubTreeWithTerminals(whileTree, terminals, 0);
-
-						i += 1;
-						currentIndex = i;
-
-						// use for loop to parse all statements in the while statement
-						for (; i < lexemeList.size(); i++) {
-							SymbolToken t = lexemeList.get(i);
-
-							// check if the while statement ends
-							if (t.isNameEqualTo("While_END")) {
-								break;
-							}
-
-							AbstractSyntaxTreeNode subTree = this.parse(i, t.getName() + "_END");
-							whileTree.insertChildNode(subTree);
-
-							i = currentIndex;
-
-							if (!lexemeList.get(i).getName().endsWith("_END")) {
-								i += 1;
-							}
-						}
-
-						currentIndex = i;
-
-						return whileTree;
-					} else {
-						return null;
-					}
-				} else if (name.equals("If")) {
-					return parseIfStatement(i, token);
-
-				} else if (name.equals("VAR")) {
-					i += 1;
-
-					currentIndex = i;
-					SymbolToken id_token = lexemeList.get(i);
-
-					// check if next token is ID
-					if (!id_token.isNameEqualTo("ID")) {
-						return null;
-					}
-
-					AbstractSyntaxTreeNode varNode = new AbstractSyntaxTreeNode(token);
-					AbstractSyntaxTreeNode idNode = new AbstractSyntaxTreeNode(id_token);
-
-					i += 1;
-					currentIndex = i;
-					SymbolToken token_next = lexemeList.get(i);
-
-					if (token_next.isNameEqualTo("IS")) {
-						i += 1;
-						currentIndex = i;
-
-						AbstractSyntaxTreeNode isNode = new AbstractSyntaxTreeNode(token_next);
-						AbstractSyntaxTreeNode subTree = this.parse(i, "VAR_END");
-
-						if (subTree != null) {
-							varNode.insertChildNode(isNode);
-							isNode.insertChildNode(idNode);
-							isNode.mergeChildren(subTree);
-
-							currentIndex += 1;
-
-							return varNode;
-						} else {
-							return null;
-						}
-					} else if (token_next.isNameEqualTo(targetName)) {
-						varNode.insertChildNode(idNode);
-						return varNode;
-					} else {
-						System.out.println("SyntaxError::Invalid token <" + token_next.getTokenString() + ">");
-						return null;
-					}
-
-				} else if (name.equals("ASSIGN")) {
-					i += 1;
-
-					SymbolToken id_token = lexemeList.get(i);
-
-					// check if next token is ID
-					if (!id_token.isNameEqualTo("ID")) {
-						return null;
-					}
-
-					AbstractSyntaxTreeNode assignNode = new AbstractSyntaxTreeNode(token);
-					AbstractSyntaxTreeNode idNode = new AbstractSyntaxTreeNode(id_token);
-
-					i += 1;
-					SymbolToken token_next = lexemeList.get(i);
-
-					// check if the next token is "=".
-					if (token_next.isNameEqualTo("IS")) {
-						i += 1;
-						AbstractSyntaxTreeNode isNode = new AbstractSyntaxTreeNode(token_next);
-						AbstractSyntaxTreeNode subTree = this.parse(i, "terminal_expression");
-
-						i = currentIndex;
-
-						if (subTree != null) {
-							assignNode.insertChildNode(isNode);
-							isNode.insertChildNode(idNode);
-							isNode.mergeChildren(subTree);
-
-							return assignNode;
-						} else {
-							return null;
-						}
-					} else {
-						System.out.println("SyntaxError::Invalid token <" + token_next.getTokenString() + ">");
-					}
-
-				} else if (name.equals("PRINT") || name.equals("PRINTLN")) {
-					AbstractSyntaxTreeNode subTree = this.parse(i + 1, targetName);
-
-					i = currentIndex;
-
-					// to avoid NullPointerException
-					if (subTree != null) {
-						AbstractSyntaxTreeNode printStatement = new AbstractSyntaxTreeNode(token);
-						printStatement.mergeChildren(subTree);
-						return printStatement;
-					} else {
-						return null;
-					}
-
-				} else if (name.equals("GET")) {
-					i += 1;
-					currentIndex = i;
-
-					SymbolToken nextToken = lexemeList.get(i);
-
-					if (!nextToken.getName().equals("ID")) {
-						System.out.println("SyntaxError::\"get\" could only used with variable!");
-						return null;
-					}
-
-					AbstractSyntaxTreeNode nextNode = new AbstractSyntaxTreeNode(nextToken);
-					AbstractSyntaxTreeNode getStatement = new AbstractSyntaxTreeNode(token);
-
-					getStatement.insertChildNode(nextNode);
-
-					i += 1;
-					currentIndex += 1;
-
-					nextToken = lexemeList.get(i);
-
-					// check if the statement ends
-					if (nextToken.getName().equals("GET_END")) {
-						return getStatement;
-					} else {
-						return null;
-					}
-				}
-
-			} else if (name.equals(endName)) {
-				currentIndex = i;
-				break;
-
-			} else {
-				ArrayList<SymbolToken> terminals = new ArrayList<SymbolToken>();
-
-				for (int j = i; j < lexemeList.size(); j++) {
-					SymbolToken tempToken = lexemeList.get(j);
-					String tempName = tempToken.getName();
-
-					// check if current token is terminal
-					if (this.checkIfTerminal(tempName)) {
-						//add terminal symbol to the array list
-						terminals.add(tempToken);
-					} else {
-						break;
-					}
-				}
-
-				// check if the list of terminals is empty
-				if (terminals.size() == 0) {
-					return null;
-				}
-
-				currentIndex += (terminals.size() - 1);
-				i = currentIndex;
-
-				AbstractSyntaxTreeNode subTree = new AbstractSyntaxTreeNode(new SymbolToken("TERMINALS"), children);
-				this.generateSubTreeWithTerminals(subTree, terminals, 0);
-
-				return subTree;
-			}
-		}
-
-		return new AbstractSyntaxTreeNode(this.lexemeList.get(startIndex), children);
-	}
-
-	/**
-	 * Parse the if-statement, and generate the sub tree for the if-statement.
-	 * @param i - start index
-	 * @param token - token for if statement.
-	 * @return If error occurs, returns null. Otherwise, returns the sub tree.
-	 */
-	private AbstractSyntaxTreeNode parseIfStatement(int i, SymbolToken token) {
-		ArrayList<SymbolToken> terminals = new ArrayList<SymbolToken>();
-		boolean checker = true;
-		boolean boolExpressionEnd = false;
-		boolean hasElse = false;
-		int startIndex = i + 1;
-		int endIndex = startIndex;
-
-		// use for loop to iterate list of tokens
-		for (i = startIndex; i < lexemeList.size(); i++) {
-			SymbolToken t = lexemeList.get(i);
-
-			if (boolExpressionEnd) {
-				if (t.isNameEqualTo("If_END")) {
-					break;
-				} else if (t.isNameEqualTo("Else")) {
-					hasElse = true;
-				}
-
-			} else {
-				if (this.checkIfTerminal(t.getName())) {
-					terminals.add(t);
-				} else {
-					if (t.isNameEqualTo("then")) {
-						checker = true;
-					} else {
-						checker = false;
-					}
-
-					boolExpressionEnd = true;
-					endIndex = i;
-				}
-			}
-		}
-
-		currentIndex = endIndex;
-
-		// check if error occurred while iterating the list of tokens
-		if (checker) {
-			AbstractSyntaxTreeNode ifNode = new AbstractSyntaxTreeNode(token);
-			this.generateSubTreeWithTerminals(ifNode, terminals, 0);
-
-			// check if this if statement has "else" statement
-			if (hasElse) {
-				AbstractSyntaxTreeNode thenNode = new AbstractSyntaxTreeNode(lexemeList.get(endIndex));
-
-				for (i = endIndex + 1; i < lexemeList.size(); i++) {
-					SymbolToken t = lexemeList.get(i);
-
-					if (t.isNameEqualTo("Else")) {
-						break;
-					}
-
-					AbstractSyntaxTreeNode subTree = this.parse(i, t.getName() + "_END");
-					thenNode.insertChildNode(subTree);
-
-					i = currentIndex + 1;
-				}
-
-				ifNode.insertChildNode(thenNode);
-
-				/* parse the else-statement */
-
-				AbstractSyntaxTreeNode elseNode = new AbstractSyntaxTreeNode(lexemeList.get(i));
-				
-				for (i = i + 1; i < lexemeList.size(); i++) {
-					SymbolToken t = lexemeList.get(i);
-
-					if (t.isNameEqualTo("If_END")) {
-						break;
-					}
-
-					AbstractSyntaxTreeNode subTree = this.parse(i, t.getName() + "_END");
-					elseNode.insertChildNode(subTree);
-
-					i = currentIndex + 1;
-				}
-
-				ifNode.insertChildNode(elseNode);
-
-				currentIndex = i;
-			} else {
-				/* parse the then-statement of the if-statement */
-
-				AbstractSyntaxTreeNode thenNode = new AbstractSyntaxTreeNode(lexemeList.get(endIndex));
-
-				for (i = endIndex + 1; i < lexemeList.size(); i++) {
-					SymbolToken t = lexemeList.get(i);
-
-					if (t.isNameEqualTo("If_END")) {
-						break;
-					}
-
-					AbstractSyntaxTreeNode subTree = this.parse(i, t.getName() + "_END");
-					thenNode.insertChildNode(subTree);
-
-					i = currentIndex + 1;
-				}
-
-				ifNode.insertChildNode(thenNode);
-				currentIndex = i;
-			}
-
-			return ifNode;
-		} else {
-			return null;
-		}
-	}
-
-	/**
-	 * Generate the sub tree by parsing the list of terminals.
-	 * @param root - root node
-	 * @param terminals - list of terminals
-	 * @param startIndex - start index
-	 * @return The number of parsed terminals.
-	 */
-	private int generateSubTreeWithTerminals(AbstractSyntaxTreeNode root, ArrayList<SymbolToken> terminals, int startIndex) {
-		AbstractSyntaxTreeNode topNode;
-		int counter = 1;
-		int i = startIndex;
-
-		// check if the list is an empty list
-		if (terminals.size() == 0) {
-			return 0;
-		}
-
-		try {
-			SymbolToken token1 = terminals.get(i);
-
-			AbstractSyntaxTreeNode node1 = new AbstractSyntaxTreeNode(token1);
-
-			// check if the current token is LPAREN
-			if (token1.isNameEqualTo("LPAREN")) {
-				// call this method recursively to parse the parenthesis
-				int ret = generateSubTreeWithTerminals(node1, terminals, i + 1);
-				i += ret;
-				counter += ret;
-
-			} else if (token1.isNameEqualTo("RPAREN")) {
-				root.insertChildNode(node1);
-				return counter;
-
-			} else if (token1.isValueEqualTo("not")) {
-				counter += 1;
-				i += 1;
-
-				SymbolToken token2 = terminals.get(i);
-
-				// check if the current token is an operator
-				if (this.checkIfOperator(token2.getName())) {
-					System.out.println("SyntaxError::Operator \"not\" requries operand!");
-					return counter;
-
-					//check if the current token is '('
-				} else if (token2.getName().endsWith("LPAREN")) {
-					AbstractSyntaxTreeNode tempNode = new AbstractSyntaxTreeNode(token2);
-					node1.insertChildNode(tempNode);
-
-					// check if the current token is an operand
-				} else if (!this.checkIfOperator(token2.getName())) {
-					AbstractSyntaxTreeNode node2 = new AbstractSyntaxTreeNode(token2);
-					node1.insertChildNode(node2);
-
-				}
-			} else if (token1.getName().endsWith("OP")) { //check if the expression starts with an operator.
-				System.out.println("SyntaxError::Expression cannot start with operator!");
-				return counter;
-			}
-
-			i += 1;
-
-			// check if the current token is the last terminal
-			if (i == terminals.size()) {
-				root.insertChildNode(node1);
-				return counter;
-			}
-
-			counter += 1;
-			SymbolToken token2 = terminals.get(i);
-
-			AbstractSyntaxTreeNode node2 = new AbstractSyntaxTreeNode(token2);
-
-			// check if the current token is an operand
-			if (this.checkIfNotOperator(token2.getName())) {
-				if (!token2.isNameEqualTo("RPAREN")) {
-					System.out.println("SyntaxError::Expression cannot have multiple operands continuously!");
-				} else {
-					node2.insertChildNode(node1);
-					root.insertChildNode(node2);
-				}
-				return counter;
-
-				// check if the current token is "not" operator
-			} else if (token2.isValueEqualTo("not")) {
-				System.out.println("SyntaxError::Operator \"not\" is an unary operator!");
-				return counter;
-
-			}
-
-			i += 1;
-			counter += 1;
-
-			SymbolToken token3 = terminals.get(i);
-			AbstractSyntaxTreeNode node3 = new AbstractSyntaxTreeNode(token3);
-
-			// check if the current token is LPAREN
-			if (token3.isNameEqualTo("LPAREN")) {
-				// call this method recursively to parse the parenthesis
-				int ret = generateSubTreeWithTerminals(node3, terminals, i + 1);
-				i += ret;
-				counter += ret;
-
-				// check if current token is ')'
-			} else if (token3.isNameEqualTo("RPAREN")) {
-				System.out.println("SyntaxError::\"(\" cannot be followed by operator!");
-				return counter;
-
-				// check if the current token is the "not" operator
-			} else if (token3.isValueEqualTo("not")) {
-				i += 1;
-				counter += 1;
-				SymbolToken token4 = terminals.get(i);
-
-				// check if the current token is an operator
-				if (this.checkIfOperator(token4.getName())) {
-					System.out.println("SyntaxError::Operator \"not\" requries operand!");
-					return counter;
-				}
-
-				AbstractSyntaxTreeNode node = new AbstractSyntaxTreeNode(token4);
-				node3.insertChildNode(node);
-
-			} else if (this.checkIfOperator(token3.getName())) {
-				System.out.println("SyntaxError::Operator \"not\" requries operand!");
-				return counter;
-			}
-
-			node2.insertChildNode(node1);
-			node2.insertChildNode(node3);
-
-			// check if the current token is the last terminal in the list
-			if (i != terminals.size()) {
-				topNode = node2;
-			} else {
-				root.insertChildNode(node2);
-				return counter;
-			}
-
-			i += 1;
-
-			// use for loop to iterate list of terminals
-			for (; i < terminals.size(); i += 1) {
-				counter += 1;
-				SymbolToken t1 = terminals.get(i);
-				AbstractSyntaxTreeNode n1 = new AbstractSyntaxTreeNode(t1);
-
-				// check if the current token is ")"
-				if (t1.isNameEqualTo("RPAREN")) {
-					root.insertChildNode(n1);
-					n1.insertChildNode(topNode);
-					return counter;
-				}
-
-				// Check if current token is operator, because the operand cannot be followed by other operand
-				if (this.checkIfOperator(t1.getName())) {
-					i += 1;
-					counter += 1;
-					SymbolToken t2 = terminals.get(i);
-
-					AbstractSyntaxTreeNode n2 = new AbstractSyntaxTreeNode(t2);
-
-					if (t2.isNameEqualTo("RPAREN")) {
-						System.out.println("SyntaxError::Operator cannot be followed by operator!");
-						return counter;
-
-					} else if (t2.isValueEqualTo("not")) {
-						i += 1;
-						AbstractSyntaxTreeNode n3 = new AbstractSyntaxTreeNode(terminals.get(i));
-						n2.insertChildNode(n3);
-
-					} else if (checkIfOperator(t2.getName())) {
-						System.out.println("SyntaxError::Operator cannot be followed by operator!");
-						return counter;
-
-					} else if (t2.isNameEqualTo("LPAREN")) {
-						n1.insertChildNode(topNode);
-						n1.insertChildNode(n2);
-						topNode = n1;
-
-						// call this method recursively to parse the parenthesis
-						int ret = generateSubTreeWithTerminals(n2, terminals, i + 1);
-						i += ret;
-						counter += ret;
-
-						continue;
-					}
-
-					n1.insertChildNode(topNode);
-					n1.insertChildNode(n2);
-					topNode = n1;
-				}  else {
-					System.out.println("SyntaxError::Operand cannot be followed by operand!");
-					return counter;
-				}
-			}
-
-			root.insertChildNode(topNode);
-		} catch (IndexOutOfBoundsException e) {
-			System.out.println(i);
-			System.out.println("SyntaxError::Invalid number of operands");
-		}
-
-		return counter;
-	}
-
-	/**
-	 * Checks if the given terminal is an operand.
-	 * @param terminal
-	 * @return If true, returns true. Otherwise, returns false.
-	 */
-	private boolean checkIfNotOperator(String terminal) {
-		return !checkIfOperator(terminal);
-	}
-
-	/**
-	 * Checks if the given terminal is an operator.
-	 * @param terminal
-	 * @return If true, returns true. Otherwise, returns false.
-	 */
-	private boolean checkIfOperator(String terminal) {
-		if (terminal.equals("AROP") || terminal.equals("RELOP") || terminal.equals("LOGOP") || terminal.equals("IS")) {
+	public static boolean checkIfStatementEnds(String line, StringBuilder sb) {
+		if (line.contains("end;")) {
+			sb.append(line);
 			return true;
-		} else {
-			return false;
-		}
-	}
+		} else if (line.contains("end")) {
+			Pattern pattern = Pattern.compile("end\\s+;");
+			Matcher matcher = pattern.matcher(line);
 
-	/**
-	 * Check if the given string is a starting point of a production rule.
-	 * @param s - string to check
-	 * @return True or false.
-	 */
-	private boolean checkIfNewProductionRuleStarted(String s) {
-		if (s.equals("While") || s.equals("Function") || s.equals("If") || s.equals("PRINT") || s.equals("PRINTLN") || s.equals("GET") || s.equals("ASSIGN") || s.equals("VAR")) {
-			return true;
+			// check if the target regular expression matches the read line contains
+			if (matcher.find()) {
+				int startIndex = matcher.start() - 1;
+
+				String targetStr = line.substring(0, startIndex) + " end;";
+
+				sb.append(targetStr);
+				return true;
+			}
 		}
+
+		sb.append(line);
+		sb.append(" ");
 
 		return false;
 	}
 
-	/**
-	 * Check if the given name of token is terminal.
-	 * @param name - name of the symbol token.
-	 * @return If it is terminal, returns true. Otherwise, returns false.
-	 */
-	private boolean checkIfTerminal(String name) {
-		if (name.equals("While") || name.equals("Function") || name.equals("If") || name.equals("then") || name.equals("Else") || name.equals("VAR") || name.equals("ASSIGN")) {
-			return false;
-		} else if (name.endsWith("_END") || name.equals("PRINT") || name.equals("PRINTLN") || name.equals("GET") || name.equals("WHILE_STMT_CONDITIONAL_END")) {
-			return false;
+	private static boolean checkNumberOfSemiColons(String line) {
+		//check if the variable declaring line has multiple semicolons
+		int counter = line.length() - line.replaceAll(";", "").length();
+		if (counter > 1) {
+			if (line.contains(";;")) {
+				System.out.println("SyntaxError::Too many semicolons");
+				return false;
+			} else {
+				Pattern pattern = Pattern.compile(";\\s+;");
+				Matcher matcher = pattern.matcher(line);
+
+				if (matcher.find()) {
+					System.out.println("SyntaxError::Too many semicolons");
+					return false;
+				}
+			}
 		}
 
 		return true;
 	}
+
+	/**
+	 * Generate a one Lexeme object that contains all lexeme tokens that the lexer generated
+	 * @param lexemeList - list of Lexemes object
+	 * @return Lexemes object
+	 */
+	private static Lexemes generateFinalLexemes(ArrayList<Lexemes> lexemeList) {
+		Lexemes lexemes = new Lexemes();
+
+		// use for-each loop to iterate lexemeList
+		for (Lexemes l : lexemeList) {
+			ArrayList<SymbolToken> list = l.getLexemeList();
+
+			for (SymbolToken token : list) {
+				lexemes.insertLexeme(token);
+			}
+		}
+
+		return lexemes;
+	}
+
+	public static void main(String[] args) {
+		BufferedReader br;
+
+		SymbolTable table = new SymbolTable();
+		Lexer lex = new Lexer(table);
+
+		try {
+			if (args.length > 0) {
+				br = new BufferedReader(new FileReader(new File(args[0])));
+			} else {
+				br = new BufferedReader(new InputStreamReader(System.in));
+			}
+
+
+			String line;
+
+			while (!lex.isFinished()) {
+
+				if ((line = br.readLine()) != null) {
+					line = line.trim();
+				} else{
+					break;
+				}
+
+				if (!checkNumberOfSemiColons(line) || line.matches("\\s+") || line.equals("")) {
+					continue;
+				}
+
+				// check if the line starts with if statement
+				if (line.startsWith("if")) {
+					String str = line.replace("if", "").trim();
+	
+					StringBuilder sb = new StringBuilder();
+					boolean checker = checkIfStatementEnds(str, sb);
+	
+					while (!checker) {
+						line = br.readLine().trim();
+	
+						if (!checkNumberOfSemiColons(line)) {
+							continue;
+						}
+	
+						checker = checkIfStatementEnds(line.trim(), sb);
+					}
+	
+					lex.parseLoop("if");
+					lex.parseIfStatement(sb.toString());
+					continue;
+				}
+	
+				// check if the read line is for function declaration
+				if (line.startsWith("procedure")) {
+					String str = line.replace("procedure", "").trim();
+	
+					StringBuilder sb = new StringBuilder(str);
+	
+					// check if the string contains the word "end", which is the end of the function body.
+					if (!str.contains("end")) {
+						// use while loop to read line until the function body ends.
+						while (!(line = br.readLine().trim()).contains("end")) {
+							if (!checkNumberOfSemiColons(line)) {
+								continue;
+							}
+	
+							sb.append(" ");
+							sb.append(line.trim());
+						}
+	
+						sb.append(" ");
+						sb.append(line.trim());
+					}
+	
+					String functionStr = sb.toString();
+	
+					if (!functionStr.contains("begin")) {
+						System.out.println("SyntaxError::Function body should start with \"begin\"!");
+						continue;
+					}
+	
+					lex.parseLoop("procedure");
+					lex.parseFunctionString(functionStr);
+					continue;
+				}
+	
+				// check if the read line contains double quote character
+				if (line.contains("\"")) {
+					int count = line.length() - line.replace("\"", "").length();
+	
+					// check the number of
+					if (count % 2 != 0) {
+						System.out.println("SyntaxError::Invalid number of double quotation mark - expected = " + (count + 1) + " actual = " + count);
+						continue;
+					}
+	
+				}
+	
+				lex.parseLine(line.trim());
+			}
+
+			br.close(); //close buffered reader
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		// check the lexer state to check if the Oreo source code ends correctly
+		if (!lex.isFinished()) {
+			System.out.println("SyntaxError::Invalid number of \"end\"!");
+			System.exit(1);
+		}
+
+		String programName = lex.getProgramName();
+		ArrayList<Lexemes> lexemeList = lex.getLexemeList();
+
+//		for (Lexemes l : lexemeList) {
+//			l.printAll();
+//		}
+//
+//		System.out.println("-----------");
+
+		// generate the Lexeme object that contians all lexeme tokens that the lexer generated
+		Lexemes lexeme = generateFinalLexemes(lexemeList);
+
+		// generate the Parser that will generate the AST
+		SyntacticalParser parser = new SyntacticalParser(lexeme.getLexemeList(), programName);
+		AbstractSyntaxTreeNode node = parser.parse(0);
+		node.printOutChildren();
+	}
+
 }

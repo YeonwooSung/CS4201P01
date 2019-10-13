@@ -15,6 +15,7 @@ public class ExpressionUtils {
 		int counter_leftParen = originalStr.length() - originalStr.replaceAll("\\(", "").length();
 		int counter_rightParen = originalStr.length() - originalStr.replaceAll("\\)", "").length();
 
+		// check if the number of left parentheses and right parentheses are different
 		if (counter_rightParen != counter_leftParen) {
 			System.out.println("SyntaxError::Parenthesis not matching!");
 			return false;
@@ -23,6 +24,13 @@ public class ExpressionUtils {
 		// check if the expression contains function call
 		String expression = table.checkFunction(originalStr);
 
+		/*
+		 * SymbolTable.checkFunction(expression) method will return null
+		 * if the expression string contains the function call with invalid number of arguments.
+		 *
+		 * So, by checking the return value of that method, we could validate the number of arguments
+		 * that is required for the function call.
+		 */
 		if (expression == null) {
 			System.out.println("SyntaxError::Function call failed");
 			return false;
@@ -45,23 +53,14 @@ public class ExpressionUtils {
 		String[] leftParenArr = expression.split("\\(");
 		int length1 = leftParenArr.length - 1;
 
+		/* parse the expressions for the lexical analysis */
+
 		outer:
 		for (int a = 0; a <= length1; a++) {
-//			if (a == 0) {
-//				if (expression.startsWith("(")) {
-//					temp.insertLexeme("LPAREN");
-//				}
-//			} else {
-//				if (a != length1) temp.insertLexeme("LPAREN");
-//				//TODO temp.insertLexeme("LPAREN");
-//			}
 			if (a != 0) {
-				if (a != length1) {
-					temp.insertLexeme("LPAREN");
-				} else if (expression.endsWith("(" + leftParenArr[a])) {
+				if (a != length1 || expression.endsWith("(" + leftParenArr[a])) {
 					temp.insertLexeme("LPAREN");
 				}
-				//TODO temp.insertLexeme("LPAREN");
 			}
 
 			String expressionStr = leftParenArr[a].trim(); //remove whitespaces
@@ -85,10 +84,8 @@ public class ExpressionUtils {
 						for (int j = 0; j <= lengthOfArr; j++) {
 							String str = arr[j].trim();
 
-							if (arr[j].equals("") || arr[j].matches("\\s+")) {
-								if (s.contains(arr[j] + ")")) {
-									temp.insertLexeme("RPAREN"); //TODO need to test
-								}
+							if (str.equals("")) {
+								temp.insertLexeme("RPAREN");
 								continue;
 							}
 
@@ -122,11 +119,15 @@ public class ExpressionUtils {
 				String[] arr = expressionStr.split("\\)");
 				int lengthOfArr = arr.length - 1;
 
+				// check if the expression string has the ')' character
 				if (expressionStr.contains(")")) {
 					for (int j = 0; j <= lengthOfArr; j++) {
 						String str = arr[j].trim();
 
-						if (str.isEmpty()) continue;
+						if (str.isEmpty()) {
+							temp.insertLexeme("RPAREN");
+							continue;
+						}
 
 						// check if the expression string contains the '-'
 						if (!splitBySubtractionAndAppendToLexemes(temp, str.trim(), table)) {
