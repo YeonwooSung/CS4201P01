@@ -1,0 +1,17 @@
+program Test
+    begin
+    {- define the procedure function -}
+    procedure function
+    begin
+        return x + y;
+    end
+
+    procedure main ()
+    begin
+        var result;
+        {- call the procedure called
+         function -}
+        result := function(1, 2);
+        print (result);
+    end
+end

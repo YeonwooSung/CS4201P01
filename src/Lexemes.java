@@ -11,10 +11,18 @@ public class Lexemes {
 		lexemeList.add(new SymbolToken(name, value));
 	}
 
+	/**
+	 * Help the user to insert the given token to lexeme list.
+	 * @param token - target token
+	 */
 	public void insertLexeme(SymbolToken token) {
 		lexemeList.add(token);
 	}
 
+	/**
+	 * Getter for lexemeList.
+	 * @return lexemeList
+	 */
 	private ArrayList<SymbolToken> getList() {
 		return lexemeList;
 	}

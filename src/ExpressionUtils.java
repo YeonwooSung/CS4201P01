@@ -1,5 +1,13 @@
 public class ExpressionUtils {
 
+	/**
+	 * Add tokens to the lexeme list.
+	 * @param lexemes - object that stores the lexeme tokens
+	 * @param originalStr - expression string
+	 * @param table - symbol table
+	 * @param varID - id of the variable
+	 * @return If the given expression is valid, returns true. Otherwise, returns false.
+	 */
 	public static boolean addTokensToLexemes(Lexemes lexemes, String expression, SymbolTable table, String varID) {		
 		lexemes.insertLexeme("VAR");
 		lexemes.insertLexeme("ID", varID);
@@ -11,6 +19,13 @@ public class ExpressionUtils {
 		return checker;
 	}
 
+	/**
+	 * Add tokens to the lexeme list.
+	 * @param lexemes - object that stores the lexeme tokens
+	 * @param originalStr - expression string
+	 * @param table - symbol table
+	 * @return If the given expression is valid, returns true. Otherwise, returns false.
+	 */
 	public static boolean addTokensToLexemes(Lexemes lexemes, String originalStr, SymbolTable table) {
 		int counter_leftParen = originalStr.length() - originalStr.replaceAll("\\(", "").length();
 		int counter_rightParen = originalStr.length() - originalStr.replaceAll("\\)", "").length();
@@ -166,6 +181,13 @@ public class ExpressionUtils {
 		return false;
 	}
 
+	/**
+	 * Split the expression by operator '-', and append the tokens to the lexeme list.
+	 * @param lexemes - the object contains the lexeme list.
+	 * @param expression - expression string
+	 * @param table - symbol table
+	 * @return If the expression is valid, returns true. Otherwise, returns false.
+	 */
 	private static boolean splitBySubtractionAndAppendToLexemes(Lexemes lexemes, String expression, SymbolTable table) {
 		if (expression.contains("-")) {
 			String[] expressionArr = expression.split("-");
@@ -188,6 +210,13 @@ public class ExpressionUtils {
 		return true;
 	}
 
+	/**
+	 * Split the expression by operator '*', and append the tokens to the lexeme list.
+	 * @param lexemes - the object contains the lexeme list.
+	 * @param expression - expression string
+	 * @param table - symbol table
+	 * @return If the expression is valid, returns true. Otherwise, returns false.
+	 */
 	private static boolean splitByMultiplicationAndAppendToLexemes(Lexemes lexemes, String expression, SymbolTable table) {
 		if (expression.contains("*")) {
 			String[] expressionArr = expression.split("\\*");
@@ -210,6 +239,13 @@ public class ExpressionUtils {
 		return true;
 	}
 
+	/**
+	 * Split the expression by operator '/', and append the tokens to the lexeme list.
+	 * @param lexemes - the object contains the lexeme list.
+	 * @param expression - expression string
+	 * @param table - symbol table
+	 * @return If the expression is valid, returns true. Otherwise, returns false.
+	 */
 	private static boolean splitByDivisionAndAppendToLexemes(Lexemes lexemes, String expression, SymbolTable table) {
 		if (expression.contains("/")) {
 			String[] expressionArr = expression.split("/");
@@ -319,6 +355,7 @@ public class ExpressionUtils {
 
 			for (int i = 0; i <= finalIndex; i++) {
 				String s = arr[i];
+
 				if (table.contains(s)) {
 					int id = table.getIdOfVariable(s);
 					lexemes.insertLexeme("ID", ((Integer) id).toString());
@@ -331,12 +368,12 @@ public class ExpressionUtils {
 					} else {
 						if (!checkAndOperations(s.trim(), lexemes, table)) return false;
 					}
+				}
 
-					if (i < finalIndex) {
-						lexemes.insertLexeme("LOGOP", "not");
-					} else if (expression.endsWith("not")) {
-						lexemes.insertLexeme("LOGOP", "not");
-					}
+				if (i < finalIndex) {
+					lexemes.insertLexeme("LOGOP", "not");
+				} else if (expression.endsWith("not")) {
+					lexemes.insertLexeme("LOGOP", "not");
 				}
 			}
 
@@ -361,6 +398,7 @@ public class ExpressionUtils {
 
 			for (int i = 0; i <= finalIndex; i++) {
 				String s = arr[i];
+
 				if (table.contains(s)) {
 					int id = table.getIdOfVariable(s);
 					lexemes.insertLexeme("ID", ((Integer) id).toString());
@@ -373,12 +411,12 @@ public class ExpressionUtils {
 					} else {
 						if (!checkOrOperations(s.trim(), lexemes, table)) return false;
 					}
+				}
 
-					if (i < finalIndex) {
-						lexemes.insertLexeme("LOGOP", "and");
-					} else if (expression.endsWith("and")) {
-						lexemes.insertLexeme("LOGOP", "and");
-					}
+				if (i < finalIndex) {
+					lexemes.insertLexeme("LOGOP", "and");
+				} else if (expression.endsWith("and")) {
+					lexemes.insertLexeme("LOGOP", "and");
 				}
 			}
 
@@ -416,6 +454,7 @@ public class ExpressionUtils {
 						if (!checkEqualsToOperations(s.trim(), lexemes, table)) return false;
 					}
 
+					// check if the current word is a variable
 					if (i < finalIndex) {
 						lexemes.insertLexeme("LOGOP", "or");
 					} else if (expression.endsWith("or")) {
@@ -446,6 +485,8 @@ public class ExpressionUtils {
 
 			for (int i = 0; i <= finalIndex; i++) {
 				String s = arr[i];
+
+				// check if the current word is a variable
 				if (table.contains(s)) {
 					int id = table.getIdOfVariable(s);
 					lexemes.insertLexeme("ID", ((Integer) id).toString());
@@ -522,7 +563,7 @@ public class ExpressionUtils {
 											lexemes.insertLexeme("CONST_NUM", s4);
 										}
 									} catch (Exception e) {
-										System.out.println("TypeError::Expected Number type - " + expression);
+										System.out.println("NameError::Cannot find function or variable called " + expression);
 										return false;
 									}
 

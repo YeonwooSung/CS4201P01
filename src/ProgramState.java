@@ -48,6 +48,11 @@ public class ProgramState implements LexerFSA {
 		}
 	}
 
+	/**
+	 * Validate the program name.
+	 * @param str - program name
+	 * @return If valid, returns true. Otherwise, returns false.
+	 */
 	private boolean validateName(String str) {
 		if (str.equals("program") || str.equals("begin") || str.equals("end") || str.equals("if") || str.equals("else") || str.equals("while") || str.equals("print") || str.equals("println") || str.equals("procedure") || str.equals("get") || str.equals("function")) {
 			System.out.println("KeywordError::Cannot use the keyword string as a name of the program!");

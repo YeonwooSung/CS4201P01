@@ -178,11 +178,6 @@ public class Lexer {
 			if (nextState.equals("Compound")) {
 				compoundLevel += 1;
 
-				//TODO test
-				if (compoundLevel != (compoundList.size() - 1)) {
-					System.out.println("ERROR!!!! - TEST in parse() -> Compound");
-				}
-
 				currentState = compoundList.get(compoundLevel);
 			} else if (nextState.equals("END")) {
 				compoundList.remove(compoundLevel);
@@ -190,7 +185,7 @@ public class Lexer {
 				compoundLevel -= 1;
 
 				if (compoundLevel >= 0) {
-					currentState = compoundList.get(compoundLevel);
+					currentState = statementList.get(compoundLevel);
 
 				} else {
 					programName = ((ProgramState)this.PROGRAM_STATE).getProgramName();
@@ -205,11 +200,6 @@ public class Lexer {
 					statementList.add(new StatementState(table, isForFunctionBody, state.getMode()));
 				} else {
 					statementList.add(new StatementState(table, isForFunctionBody));
-				}
-
-				//TODO test
-				if (compoundLevel != (statementList.size() - 1)) {
-					System.out.println("ERROR!!!! - TEST in parse() -> Statement");
 				}
 
 				currentState = statementList.get(compoundLevel);

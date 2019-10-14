@@ -162,6 +162,11 @@ public class FunctionState implements LexerFSA {
 		nextState = STATEMENT_SUCCESS;
 	}
 
+	/**
+	 * Parses the "return" statement of the procedure.
+	 * @param stmt - statement string
+	 * @return If the given statement is valid, returns true. Otherwise, returns false.
+	 */
 	private boolean parseReturnStatement(String stmt) {
 		String[] stmtArr = stmt.split(";");
 

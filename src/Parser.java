@@ -8,6 +8,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Parser {
+	/**
+	 * Validates the if statement.
+	 * @param line - read line
+	 * @param sb - string builder to store the if statement.
+	 * @return If valid, returns true. Otherwise, returns false.
+	 */
 	public static boolean checkIfStatementEnds(String line, StringBuilder sb) {
 		if (line.contains("end;")) {
 			sb.append(line);
@@ -33,6 +39,12 @@ public class Parser {
 		return false;
 	}
 
+	/**
+	 * Validate the given line by checking the number of semicolons.
+	 * @param line - read line
+	 * @return If the line contains multiple semicolons like "var a := 1 ;;", false will be returned.
+	 * 			Otherwise, returns true.
+	 */
 	private static boolean checkNumberOfSemiColons(String line) {
 		//check if the variable declaring line has multiple semicolons
 		int counter = line.length() - line.replaceAll(";", "").length();
@@ -80,6 +92,7 @@ public class Parser {
 		SymbolTable table = new SymbolTable();
 		Lexer lex = new Lexer(table);
 
+		// use try-catch statement to handle IOExeption and NullPointerException
 		try {
 			if (args.length > 0) {
 				br = new BufferedReader(new FileReader(new File(args[0])));
@@ -87,11 +100,10 @@ public class Parser {
 				br = new BufferedReader(new InputStreamReader(System.in));
 			}
 
-
 			String line;
 
 			while (!lex.isFinished()) {
-
+				// check if the read line is null
 				if ((line = br.readLine()) != null) {
 					line = line.trim();
 				} else{
@@ -105,31 +117,32 @@ public class Parser {
 				// check if the line starts with if statement
 				if (line.startsWith("if")) {
 					String str = line.replace("if", "").trim();
-	
+
 					StringBuilder sb = new StringBuilder();
 					boolean checker = checkIfStatementEnds(str, sb);
-	
+
+					// use while statement to read lines until the if statement ends
 					while (!checker) {
 						line = br.readLine().trim();
-	
+
 						if (!checkNumberOfSemiColons(line)) {
 							continue;
 						}
-	
+
 						checker = checkIfStatementEnds(line.trim(), sb);
 					}
-	
+
 					lex.parseLoop("if");
 					lex.parseIfStatement(sb.toString());
 					continue;
 				}
-	
+
 				// check if the read line is for function declaration
 				if (line.startsWith("procedure")) {
 					String str = line.replace("procedure", "").trim();
-	
+
 					StringBuilder sb = new StringBuilder(str);
-	
+
 					// check if the string contains the word "end", which is the end of the function body.
 					if (!str.contains("end")) {
 						// use while loop to read line until the function body ends.
@@ -137,43 +150,46 @@ public class Parser {
 							if (!checkNumberOfSemiColons(line)) {
 								continue;
 							}
-	
+
 							sb.append(" ");
 							sb.append(line.trim());
 						}
-	
+
 						sb.append(" ");
 						sb.append(line.trim());
 					}
-	
+
 					String functionStr = sb.toString();
-	
+
 					if (!functionStr.contains("begin")) {
 						System.out.println("SyntaxError::Function body should start with \"begin\"!");
 						continue;
 					}
-	
+
 					lex.parseLoop("procedure");
 					lex.parseFunctionString(functionStr);
 					continue;
 				}
-	
+
 				// check if the read line contains double quote character
 				if (line.contains("\"")) {
 					int count = line.length() - line.replace("\"", "").length();
-	
+
 					// check the number of
 					if (count % 2 != 0) {
 						System.out.println("SyntaxError::Invalid number of double quotation mark - expected = " + (count + 1) + " actual = " + count);
 						continue;
 					}
-	
+
 				}
-	
+
 				lex.parseLine(line.trim());
 			}
 
 			br.close(); //close buffered reader
+		} catch (NullPointerException e) {
+			System.out.println("Error::Source code did not end properly!");
+			System.exit(0);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -187,18 +203,14 @@ public class Parser {
 		String programName = lex.getProgramName();
 		ArrayList<Lexemes> lexemeList = lex.getLexemeList();
 
-//		for (Lexemes l : lexemeList) {
-//			l.printAll();
-//		}
-//
-//		System.out.println("-----------");
-
 		// generate the Lexeme object that contians all lexeme tokens that the lexer generated
 		Lexemes lexeme = generateFinalLexemes(lexemeList);
 
 		// generate the Parser that will generate the AST
 		SyntacticalParser parser = new SyntacticalParser(lexeme.getLexemeList(), programName);
 		AbstractSyntaxTreeNode node = parser.parse(0);
+
+		System.out.println("\n\nAST for program \"" + programName + "\"\n");
 		node.printOutChildren();
 	}
 

@@ -549,11 +549,11 @@ public class SyntacticalParser {
 				i += ret;
 				counter += ret;
 
-			} else if (token1.isNameEqualTo("RPAREN")) {
+			} else if (token1.isNameEqualTo("RPAREN")) { // check if the current token is right parenthesis
 				root.insertChildNode(node1);
 				return counter;
 
-			} else if (token1.isValueEqualTo("not")) {
+			} else if (token1.isValueEqualTo("not")) { // check if the current token is a "not" operator
 				counter += 1;
 				i += 1;
 
@@ -561,8 +561,41 @@ public class SyntacticalParser {
 
 				// check if the current token is an operator
 				if (this.checkIfOperator(token2.getName())) {
-					System.out.println("SyntaxError::Operator \"not\" requries operand!");
-					return counter;
+
+					// check if the next token is "not" operator
+					if (token2.getValue().equals("not")) {
+						AbstractSyntaxTreeNode node2 = new AbstractSyntaxTreeNode(token2);
+						node1.insertChildNode(node2);
+
+						// use for loop to iterate list of terminals until it founds the terminals that is not "not" operator
+						for (i = i + 1; i < terminals.size(); i++) {
+							counter += 1;
+							SymbolToken token = terminals.get(i);
+
+							// check if the current token is a not operator
+							if (token.getValue() != null && token.getValue().equals("not")) {
+								AbstractSyntaxTreeNode notOperatorNode = new AbstractSyntaxTreeNode(token);
+								node2.insertChildNode(notOperatorNode);
+								node2 = notOperatorNode;
+
+							} else {
+
+								// check if the current token is an operand
+								if (this.checkIfNotOperator(token.getName())) {
+									AbstractSyntaxTreeNode operandNode = new AbstractSyntaxTreeNode(token);
+									node2.insertChildNode(operandNode);
+									break;
+								} else {
+									System.out.println("SyntaxError::Operator \"not\" requries operand!");
+									return counter;
+								}
+							}
+						}
+
+					} else {
+						System.out.println("SyntaxError::Operator \"not\" requries operand!");
+						return counter;
+					}
 
 					//check if the current token is '('
 				} else if (token2.getName().endsWith("LPAREN")) {
@@ -575,6 +608,7 @@ public class SyntacticalParser {
 					node1.insertChildNode(node2);
 
 				}
+
 			} else if (token1.getName().endsWith("OP")) { //check if the expression starts with an operator.
 				System.out.println("SyntaxError::Expression cannot start with operator!");
 				return counter;
@@ -636,12 +670,44 @@ public class SyntacticalParser {
 
 				// check if the current token is an operator
 				if (this.checkIfOperator(token4.getName())) {
-					System.out.println("SyntaxError::Operator \"not\" requries operand!");
-					return counter;
-				}
 
-				AbstractSyntaxTreeNode node = new AbstractSyntaxTreeNode(token4);
-				node3.insertChildNode(node);
+					// check if the current token is a not operator
+					if (token4.getValue().equals("not")) {
+						AbstractSyntaxTreeNode node = new AbstractSyntaxTreeNode(token4);
+						node3.insertChildNode(node);
+
+						for (i = i + 1; i < terminals.size(); i++) {
+							SymbolToken token = terminals.get(i);
+							counter += 1;
+
+							// check if the current token is an operator
+							if (this.checkIfOperator(token.getName())) {
+								// check if the current token is a not operator
+								if (token.getValue().equals("not")) {
+									AbstractSyntaxTreeNode tempNode = new AbstractSyntaxTreeNode(token);
+									node.insertChildNode(tempNode);
+									node = tempNode;
+
+								} else {
+									System.out.println("SyntaxError::Operator \"not\" requries operand!");
+									return counter;
+								}
+
+							} else { // current token is an operand
+								AbstractSyntaxTreeNode operandNode = new AbstractSyntaxTreeNode(token);
+								node.insertChildNode(operandNode);
+								break;
+							}
+						}
+
+					} else {
+						System.out.println("SyntaxError::Operator \"not\" requries operand!");
+						return counter;
+					}
+				} else {
+					AbstractSyntaxTreeNode node = new AbstractSyntaxTreeNode(token4);
+					node3.insertChildNode(node);
+				}
 
 			} else if (this.checkIfOperator(token3.getName())) {
 				System.out.println("SyntaxError::Operator \"not\" requries operand!");
@@ -688,8 +754,42 @@ public class SyntacticalParser {
 
 					} else if (t2.isValueEqualTo("not")) {
 						i += 1;
-						AbstractSyntaxTreeNode n3 = new AbstractSyntaxTreeNode(terminals.get(i));
-						n2.insertChildNode(n3);
+						SymbolToken token = terminals.get(i);
+
+						if (this.checkIfNotOperator(token.getName())) {
+							AbstractSyntaxTreeNode n3 = new AbstractSyntaxTreeNode(token);
+							n2.insertChildNode(n3);
+
+						} else if (token.getValue() != null && token.getValue().equals("not")) {
+							AbstractSyntaxTreeNode n3 = new AbstractSyntaxTreeNode(token);
+
+							for (i = i + 1; i < terminals.size(); i++) {
+								token = terminals.get(i);
+								counter += 1;
+
+								// check if next token is an operand
+								if (this.checkIfNotOperator(token.getName())) {
+									AbstractSyntaxTreeNode nextNode = new AbstractSyntaxTreeNode(token);
+									n3.insertChildNode(nextNode);
+
+									break;
+								} else {
+									if (token.getValue() != null && token.getValue().equals("not")) {
+										AbstractSyntaxTreeNode nextNode = new AbstractSyntaxTreeNode(token);
+										n3.insertChildNode(nextNode);
+										n3 = nextNode;
+
+									} else {
+										System.out.println("SyntaxError::Operator \"not\" requries operand!");
+										return counter;
+									}
+								}
+							}
+
+						} else{
+							System.out.println("SyntaxError::Operator \"not\" requries operand!");
+							return counter;
+						}
 
 					} else if (checkIfOperator(t2.getName())) {
 						System.out.println("SyntaxError::Operator cannot be followed by operator!");
@@ -719,7 +819,6 @@ public class SyntacticalParser {
 
 			root.insertChildNode(topNode);
 		} catch (IndexOutOfBoundsException e) {
-			System.out.println(i);
 			System.out.println("SyntaxError::Invalid number of operands");
 		}
 

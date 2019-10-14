@@ -3,7 +3,7 @@ import java.util.Iterator;
 import java.util.List;
 
 public class AbstractSyntaxTreeNode {
-    private SymbolToken token;
+	private SymbolToken token;
     private List<AbstractSyntaxTreeNode> children;
 
     public AbstractSyntaxTreeNode(SymbolToken token) {
@@ -18,61 +18,56 @@ public class AbstractSyntaxTreeNode {
 
     /**
      * Returns the token string.
-     * 
      * @return the token string
      */
     public String getTokenString() {
-        return this.token.getTokenString();
+    	return this.token.getTokenString();
     }
 
     /**
      * Returns the token name.
-     * 
      * @return name of the token
      */
     public String getTokenName() {
-        return this.token.getName();
+    	return this.token.getName();
     }
 
     /**
      * Merge the given tree to this tree node.
-     * 
      * @param node - root node of the target tree
      */
     public void mergeChildren(AbstractSyntaxTreeNode node) {
-        List<AbstractSyntaxTreeNode> list = node.children;
-        for (AbstractSyntaxTreeNode n : list) {
-            this.children.add(n);
-        }
+    	List<AbstractSyntaxTreeNode> list = node.children;
+    	for (AbstractSyntaxTreeNode n : list) {
+    		this.children.add(n);
+    	}
     }
 
     /**
      * Print out the AST.
      */
     public void printOutChildren() {
-        StringBuilder buffer = new StringBuilder();
-        this.generateTreeString(buffer, "", "");
-        System.out.println(buffer.toString());
+    	StringBuilder buffer = new StringBuilder();
+    	this.generateTreeString(buffer, "", "");
+    	System.out.println(buffer.toString());
     }
 
     /**
      * Insert the child node to the array list.
-     * 
      * @param child - child node
      */
     public void insertChildNode(AbstractSyntaxTreeNode child) {
-        if (child == null) {
-            return;
-        }
+    	if (child == null) {
+    		return;
+    	}
 
-        this.children.add(child);
+    	this.children.add(child);
     }
 
     /**
      * Generate the tree string.
-     * 
-     * @param buffer         - buffer to store the generated tree string
-     * @param prefix         - prefix
+     * @param buffer - buffer to store the generated tree string
+     * @param prefix - prefix
      * @param childrenPrefix - prefix for children
      */
     private void generateTreeString(StringBuilder buffer, String prefix, String childrenPrefix) {
@@ -81,11 +76,11 @@ public class AbstractSyntaxTreeNode {
         buffer.append('\n');
 
         for (Iterator<AbstractSyntaxTreeNode> it = children.iterator(); it.hasNext();) {
-            AbstractSyntaxTreeNode next = it.next();
+        	AbstractSyntaxTreeNode next = it.next();
             if (it.hasNext()) {
-                next.generateTreeString(buffer, childrenPrefix + "â”œâ”€â”€ ", childrenPrefix + "â”‚   ");
+                next.generateTreeString(buffer, childrenPrefix + "¦§¦¡¦¡ ", childrenPrefix + "¦¢   ");
             } else {
-                next.generateTreeString(buffer, childrenPrefix + "â””â”€â”€ ", childrenPrefix + "    ");
+                next.generateTreeString(buffer, childrenPrefix + "¦¦¦¡¦¡ ", childrenPrefix + "    ");
             }
         }
     }
